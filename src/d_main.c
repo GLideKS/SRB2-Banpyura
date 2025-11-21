@@ -1374,8 +1374,14 @@ void D_SRB2Main(void)
 		else
 		{
 			// use user specific config file
+			if (M_CheckParm("-workdir") && M_IsNextParm())
+				snprintf(srb2home, sizeof srb2home, "%s", M_GetNextParm());
+			else
 #ifdef DEFAULTDIR
-			snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+				snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+#else // DEFAULTDIR
+				snprintf(srb2home, sizeof srb2home, "%s", userhome);
+#endif // DEFAULTDIR
 			snprintf(downloaddir, sizeof downloaddir, "%s" PATHSEP "DOWNLOAD", srb2home);
 			if (dedicated)
 			{
@@ -1393,31 +1399,14 @@ void D_SRB2Main(void)
 			strcatbf(liveeventbackup, srb2home, PATHSEP);
 
 			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", srb2home);
-#else // DEFAULTDIR
-			snprintf(srb2home, sizeof srb2home, "%s", userhome);
-			snprintf(downloaddir, sizeof downloaddir, "%s", userhome);
-			if (dedicated)
-			{
-				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP "d"CONFIGFILENAME,		userhome);
-				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP "d"BANPCONFIGFILENAME,	userhome);
-			}
-			else
-			{
-				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP CONFIGFILENAME,		userhome);
-				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP BANPCONFIGFILENAME,	userhome);
-			}
-
-			// can't use sprintf since there is %u in savegamename
-			strcatbf(savegamename, userhome, PATHSEP);
-			strcatbf(liveeventbackup, userhome, PATHSEP);
-
-			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", userhome);
-#endif // DEFAULTDIR
 		}
 
 		configfile[sizeof configfile - 1] = '\0';
 		bnpconfigfile[sizeof bnpconfigfile - 1] = '\0';
 	}
+
+	// make sure workdir exists
+	I_mkdir(srb2home, 0755);
 
 	M_LoadJoinedIPs();	// load joined ips
 	
