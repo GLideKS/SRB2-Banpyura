@@ -9828,6 +9828,7 @@ static CV_PossibleValue_t CV_CamSpeed[] = {{0, "MIN"}, {1*FRACUNIT, "MAX"}, {0, 
 static CV_PossibleValue_t rotation_cons_t[] = {{1, "MIN"}, {25, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t CV_CamRotate[] = {{-720, "MIN"}, {720, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t multiplier_cons_t[] = {{0, "MIN"}, {3*FRACUNIT, "MAX"}, {0, NULL}};
+static CV_PossibleValue_t sensitivity_cons_t[] = {{0, "MIN"}, {10*FRACUNIT, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t campos_cons_t[] = { {INT32_MIN, "MIN"}, {INT32_MAX, "MAX"}, {0, NULL} };
 
 consvar_t cv_cam_dist = CVAR_INIT ("cam_curdist", "160", CV_FLOAT|CV_ALLOWLUA, campos_cons_t, NULL);
@@ -9837,6 +9838,8 @@ consvar_t cv_cam_speed = CVAR_INIT ("cam_speed", "0.3", CV_FLOAT|CV_SAVE|CV_ALLO
 consvar_t cv_cam_rotate = CVAR_INIT ("cam_rotate", "0", CV_CALL|CV_NOINIT|CV_ALLOWLUA, CV_CamRotate, CV_CamRotate_OnChange);
 consvar_t cv_cam_rotspeed = CVAR_INIT ("cam_rotspeed", "10", CV_SAVE|CV_ALLOWLUA, rotation_cons_t, NULL);
 consvar_t cv_cam_turnmultiplier = CVAR_INIT ("cam_turnmultiplier", "0.75", CV_FLOAT|CV_SAVE|CV_ALLOWLUA, multiplier_cons_t, NULL);
+consvar_t cv_cam_gamepadxsensitivity = CVAR_INIT ("cam_gamepadxsensitivity", "1", CV_FLOAT|CV_SAVE|CV_ALLOWLUA|CV_CLIENT, sensitivity_cons_t, NULL);
+consvar_t cv_cam_gamepadysensitivity = CVAR_INIT ("cam_gamepadysensitivity", "1", CV_FLOAT|CV_SAVE|CV_ALLOWLUA|CV_CLIENT, sensitivity_cons_t, NULL);
 consvar_t cv_cam_orbit = CVAR_INIT ("cam_orbit", "Off", CV_SAVE|CV_ALLOWLUA, CV_OnOff, NULL);
 consvar_t cv_cam_adjust = CVAR_INIT ("cam_adjust", "On", CV_SAVE|CV_ALLOWLUA, CV_OnOff, NULL);
 consvar_t cv_cam2_dist = CVAR_INIT ("cam2_curdist", "160", CV_FLOAT|CV_ALLOWLUA, campos_cons_t, NULL);
@@ -9846,18 +9849,20 @@ consvar_t cv_cam2_speed = CVAR_INIT ("cam2_speed", "0.3", CV_FLOAT|CV_SAVE|CV_AL
 consvar_t cv_cam2_rotate = CVAR_INIT ("cam2_rotate", "0", CV_CALL|CV_NOINIT|CV_ALLOWLUA, CV_CamRotate, CV_CamRotate2_OnChange);
 consvar_t cv_cam2_rotspeed = CVAR_INIT ("cam2_rotspeed", "10", CV_SAVE|CV_ALLOWLUA, rotation_cons_t, NULL);
 consvar_t cv_cam2_turnmultiplier = CVAR_INIT ("cam2_turnmultiplier", "0.75", CV_FLOAT|CV_SAVE|CV_ALLOWLUA, multiplier_cons_t, NULL);
+consvar_t cv_cam2_gamepadxsensitivity = CVAR_INIT ("cam2_gamepadxsensitivity", "1", CV_FLOAT|CV_SAVE|CV_ALLOWLUA|CV_CLIENT, sensitivity_cons_t, NULL);
+consvar_t cv_cam2_gamepadysensitivity = CVAR_INIT ("cam2_gamepadysensitivity", "1", CV_FLOAT|CV_SAVE|CV_ALLOWLUA|CV_CLIENT, sensitivity_cons_t, NULL);
 consvar_t cv_cam2_orbit = CVAR_INIT ("cam2_orbit", "Off", CV_SAVE|CV_ALLOWLUA, CV_OnOff, NULL);
 consvar_t cv_cam2_adjust = CVAR_INIT ("cam2_adjust", "On", CV_SAVE|CV_ALLOWLUA, CV_OnOff, NULL);
 
 // romoney5: noclip camera
 static CV_PossibleValue_t clipping_cons_t[] = { {0, "Off"}, {1, "Vanilla"}, {2, "Exact"}, {0, NULL} };
 
-consvar_t cv_cam_clipping = CVAR_INIT ("cam_clipping", "Vanilla", CV_SAVE|CV_ALLOWLUA, clipping_cons_t, NULL);
-consvar_t cv_cam2_clipping = CVAR_INIT ("cam2_clipping", "Vanilla", CV_SAVE|CV_ALLOWLUA, clipping_cons_t, NULL);
+consvar_t cv_cam_clipping = CVAR_INIT ("cam_clipping", "Vanilla", CV_SAVE|CV_ALLOWLUA|CV_CLIENT, clipping_cons_t, NULL);
+consvar_t cv_cam2_clipping = CVAR_INIT ("cam2_clipping", "Vanilla", CV_SAVE|CV_ALLOWLUA|CV_CLIENT, clipping_cons_t, NULL);
 
 // romoney5: exact camera aiming
-consvar_t cv_cam_exact = CVAR_INIT ("cam_exact", "Off", CV_SAVE|CV_ALLOWLUA, CV_OnOff, NULL);
-consvar_t cv_cam2_exact = CVAR_INIT ("cam2_exact", "Off", CV_SAVE|CV_ALLOWLUA, CV_OnOff, NULL);
+consvar_t cv_cam_exact = CVAR_INIT ("cam_exact", "Off", CV_SAVE|CV_ALLOWLUA|CV_CLIENT, CV_OnOff, NULL);
+consvar_t cv_cam2_exact = CVAR_INIT ("cam2_exact", "Off", CV_SAVE|CV_ALLOWLUA|CV_CLIENT, CV_OnOff, NULL);
 
 // [standard vs simple][p1 or p2]
 consvar_t cv_cam_savedist[2][2] = {
@@ -9971,7 +9976,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	mo = player->mo;
 
-	if (player->playerstate == PST_REBORN)
+	if (LUA_HookCameraThinker(player, thiscam) || player->playerstate == PST_REBORN)
 	{
 		P_CalcChasePostImg(player, thiscam);
 		return true;
@@ -10666,7 +10671,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		thiscam->angle = R_PointToAngle2(thiscam->x, thiscam->y, viewpointx, viewpointy);
 
 	// romoney5: roblox-style camera clipping
-	if (camclipping == 2)
+	if (camclipping == 2 && !(twodlevel || (mo->flags2 & MF2_TWOD)))
 	{
 		INT32 targetx = thiscam->x, targety = thiscam->y, targetz = thiscam->z;
 

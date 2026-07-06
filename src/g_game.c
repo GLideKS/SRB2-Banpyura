@@ -322,10 +322,20 @@ static CV_PossibleValue_t chatx_cons_t[] = {{-BASEVIDWIDTH/2, "MIN"}, {BASEVIDWI
 static CV_PossibleValue_t chaty_cons_t[] = {{-BASEVIDHEIGHT/2, "MIN"}, {BASEVIDHEIGHT, "MAX"}, {0, NULL}};
 static CV_PossibleValue_t chatsnapx_cons_t[] = {{V_SNAPTOLEFT, "Left"}, {V_SNAPTORIGHT, "Right"}, {0, NULL}};
 static CV_PossibleValue_t chatsnapy_cons_t[] = {{V_SNAPTOTOP, "Top"}, {V_SNAPTOBOTTOM, "Bottom"}, {0, NULL}};
-consvar_t cv_chatx = CVAR_INIT ("chatx", "13", CV_SAVE, chatx_cons_t, NULL);
-consvar_t cv_chaty = CVAR_INIT ("chaty", "169", CV_SAVE, chaty_cons_t, NULL);
-consvar_t cv_chatsnapx = CVAR_INIT ("chatsnapx", "Left", CV_SAVE, chatsnapx_cons_t, NULL);
-consvar_t cv_chatsnapy = CVAR_INIT ("chatsnapy", "Bottom", CV_SAVE, chatsnapy_cons_t, NULL);
+static CV_PossibleValue_t chatopacity_cons_t[] = {{0, "MIN"}, {10, "MAX"}, {0, NULL}};
+consvar_t cv_chatx = CVAR_INIT ("chatx", "13", CV_SAVE|CV_CLIENT, chatx_cons_t, NULL);
+consvar_t cv_chaty = CVAR_INIT ("chaty", "169", CV_SAVE|CV_CLIENT, chaty_cons_t, NULL);
+consvar_t cv_chatsnapx = CVAR_INIT ("chatsnapx", "Left", CV_SAVE|CV_CLIENT, chatsnapx_cons_t, NULL);
+consvar_t cv_chatsnapy = CVAR_INIT ("chatsnapy", "Bottom", CV_SAVE|CV_CLIENT, chatsnapy_cons_t, NULL);
+consvar_t cv_chatopacity = CVAR_INIT ("chatopacity", "5", CV_SAVE|CV_CLIENT, chatopacity_cons_t, NULL);
+
+// MORE chat stuff!!! YUM!!!!
+consvar_t cv_chat_showlimit = CVAR_INIT ("chat_showlimit", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+consvar_t cv_chat_clearonexit = CVAR_INIT ("chat_clearonexit", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+
+// romoney5: make the chat cursor a pipe like every other text box made after the 2000s
+static CV_PossibleValue_t chatcursor_cons_t[] = {{1, "_"}, {2, "|"}, {0, NULL}};
+consvar_t cv_chatcursor = CVAR_INIT ("chatcursor", "|", CV_SAVE|CV_CLIENT, chatcursor_cons_t, NULL);
 
 // Pause game upon window losing focus
 consvar_t cv_pauseifunfocused = CVAR_INIT ("pauseifunfocused", "Yes", CV_SAVE, CV_YesNo, NULL);
@@ -334,8 +344,8 @@ consvar_t cv_instantretry = CVAR_INIT ("instantretry", "No", CV_SAVE, CV_YesNo, 
 
 consvar_t cv_crosshair = CVAR_INIT ("crosshair", "Cross", CV_SAVE, crosshair_cons_t, NULL);
 consvar_t cv_crosshair2 = CVAR_INIT ("crosshair2", "Cross", CV_SAVE, crosshair_cons_t, NULL);
-consvar_t cv_crosshair_invert = CVAR_INIT ("crosshair_invert", "No", CV_SAVE, CV_YesNo, NULL);
-consvar_t cv_crosshair2_invert = CVAR_INIT ("crosshair2_invert", "No", CV_SAVE, CV_YesNo, NULL);
+consvar_t cv_crosshair_invert = CVAR_INIT ("crosshair_invert", "No", CV_SAVE|CV_CLIENT, CV_YesNo, NULL);
+consvar_t cv_crosshair2_invert = CVAR_INIT ("crosshair2_invert", "No", CV_SAVE|CV_CLIENT, CV_YesNo, NULL);
 consvar_t cv_invertmouse = CVAR_INIT ("invertmouse", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_alwaysfreelook = CVAR_INIT ("alwaysmlook", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_invertmouse2 = CVAR_INIT ("invertmouse2", "Off", CV_SAVE, CV_OnOff, NULL);
@@ -436,7 +446,7 @@ consvar_t cv_deadzone2 = CVAR_INIT ("joy_deadzone2", "0.125", CV_FLOAT|CV_SAVE, 
 consvar_t cv_digitaldeadzone2 = CVAR_INIT ("joy_digdeadzone2", "0.25", CV_FLOAT|CV_SAVE, zerotoone_cons_t, NULL);
 
 // disable wipes entirely
-consvar_t cv_wipes = CVAR_INIT ("wipes", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_wipes = CVAR_INIT ("wipes", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
 
 player_t *seenplayer; // player we're aiming at right now
 
@@ -1131,7 +1141,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 	INT32 *myaiming = (ssplayer == 1 ? &localaiming : &localaiming2);
 
 	angle_t drawangleoffset = (player->powers[pw_carry] == CR_ROLLOUT) ? ANGLE_180 : 0;
-	INT32 chasecam, chasefreelook, alwaysfreelook, usejoystick, invertmouse, turnmultiplier, mousemove;
+	INT32 chasecam, chasefreelook, alwaysfreelook, usejoystick, invertmouse, turnmultiplier, gamepadxsensitivity, gamepadysensitivity, mousemove;
 	controlstyle_e controlstyle = G_ControlStyle(ssplayer);
 	INT32 mdx, mdy, mldy;
 
@@ -1155,6 +1165,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		usejoystick = cv_usejoystick.value;
 		invertmouse = cv_invertmouse.value;
 		turnmultiplier = cv_cam_turnmultiplier.value;
+		gamepadxsensitivity = cv_cam_gamepadxsensitivity.value;
+		gamepadysensitivity = cv_cam_gamepadysensitivity.value;
 		mousemove = cv_mousemove.value;
 		mdx = mouse.dx;
 		mdy = -mouse.dy;
@@ -1169,6 +1181,8 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		usejoystick = cv_usejoystick2.value;
 		invertmouse = cv_invertmouse2.value;
 		turnmultiplier = cv_cam2_turnmultiplier.value;
+		gamepadxsensitivity = cv_cam2_gamepadxsensitivity.value;
+		gamepadysensitivity = cv_cam2_gamepadysensitivity.value;
 		mousemove = cv_mousemove2.value;
 		mdx = mouse2.dx;
 		mdy = -mouse2.dy;
@@ -1296,7 +1310,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		if (analogjoystickmove && lookjoystickvector.xaxis != 0)
 		{
 			// JOYAXISRANGE should be 1023 (divide by 1024)
-			cmd->angleturn = (INT16)(cmd->angleturn - ((((lookjoystickvector.xaxis * angleturn[1]) >> 10) * turnmultiplier)>>FRACBITS)); // ANALOG!
+			cmd->angleturn = (INT16)(cmd->angleturn - ((((lookjoystickvector.xaxis * angleturn[1]) >> 10) * gamepadxsensitivity)>>FRACBITS)); // ANALOG!
 		}
 
 		if (turnright || turnleft || abs(cmd->angleturn) > angleturn[2])
@@ -1397,8 +1411,9 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		static boolean last_centerviewdown[2], centerviewhold[2]; // detect taps for toggle behavior
 		boolean down = PLAYERINPUTDOWN(ssplayer, GC_CENTERVIEW);
 
-		if (!(controlstyle == CS_SIMPLE && cv_cam_centertoggle[forplayer].value))
-			centerviewdown = down;
+		if (cv_cam_centertoggle[forplayer].value == 0) {
+				centerviewdown = down;
+			}
 		else
 		{
 			if (down && !last_centerviewdown[forplayer])
@@ -1532,7 +1547,7 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		}
 
 		if (analogjoystickmove && joyaiming[forplayer] && lookjoystickvector.yaxis != 0 && configlookaxis != 0)
-			*myaiming += (lookjoystickvector.yaxis<<16) * screen_invert;
+			*myaiming += (FixedMul(lookjoystickvector.yaxis, gamepadysensitivity)<<16) * screen_invert;
 
 		// spring back if not using keyboard neither mouselookin'
 		if (!keyboard_look[forplayer] && configlookaxis == 0 && !joyaiming[forplayer] && !mouseaiming)

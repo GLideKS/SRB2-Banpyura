@@ -24,12 +24,25 @@
 #include "../doomstat.h"
 #include "../doomtype.h"
 
+static tic_t reference_lag;
+static UINT8 spike_time;
+tic_t lowest_lag;
+tic_t simulated_lag;
+
 tic_t firstticstosend; // Smallest netnode.tic
 tic_t tictoclear = 0; // Optimize D_ClearTiccmd
-ticcmd_t localcmds;
-ticcmd_t localcmds2;
+ticcmd_t localcmds[MAXGENTLEMENDELAY];
+ticcmd_t localcmds2[MAXGENTLEMENDELAY];
 boolean cl_packetmissed;
 ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
+
+boolean D_UseLocalDelay(void)
+{
+	if (dedicated || modeattacking == ATTACKING_RECORD)
+		return false;
+
+	return (cv_mindelay.value || (server && cv_gentlemens.value));
+}
 
 static inline void *G_DcpyTiccmd(void* dest, const ticcmd_t* src, const size_t n)
 {
@@ -90,11 +103,16 @@ void D_Clearticcmd(tic_t tic)
 
 void D_ResetTiccmds(void)
 {
-	memset(&localcmds, 0, sizeof(ticcmd_t));
-	memset(&localcmds2, 0, sizeof(ticcmd_t));
+	INT32 i;
+
+	for (i = 0; i< MAXGENTLEMENDELAY; i++)
+	{ 
+		memset(&localcmds[i], 0, sizeof(ticcmd_t));
+		memset(&localcmds2[i], 0, sizeof(ticcmd_t));
+	}
 
 	// Reset the net command list
-	for (INT32 i = 0; i < TEXTCMD_HASH_SIZE; i++)
+	for (i = 0; i < TEXTCMD_HASH_SIZE; i++)
 		while (textcmds[i])
 			D_Clearticcmd(textcmds[i]->tic);
 }
@@ -292,8 +310,46 @@ void CL_SendClientCmd(void)
 	}
 	else if (gamestate != GS_NULL && (addedtogame || dedicated))
 	{
+		UINT8 lagDelay = 0;
+		/*
+		CONS_Printf("\x82Start new ticcmd\n");
+		CONS_Printf("lowest_lag:		%d\n",	lowest_lag);
+		CONS_Printf("cv_mindelay.value:	%d\n",	cv_mindelay.value);
+		*/
+
+		// Gentleman's Delay
+		if (D_UseLocalDelay() && (lowest_lag > 0))
+		{
+			// go see rr code for documentation lmao
+			lagDelay = min(lowest_lag, MAXGENTLEMENDELAY);
+
+			// Is our connection worse than our current gentleman point?
+			// Make sure it stays that way for a bit before increasing delay levels.
+			if (lagDelay > reference_lag)
+			{
+				spike_time++;
+				if (spike_time >= GENTLEMANSMOOTHING)
+				{
+					// Okay, this is genuinely the new baseline delay.
+					reference_lag = lagDelay;
+					spike_time = 0;
+				}
+				else
+				{
+					// Just a temporary fluctuation, ignore it.
+					lagDelay = reference_lag;
+				}
+			}
+			else
+			{
+				reference_lag = lagDelay; // Adjust quickly if the connection improves.
+				spike_time = 0;
+			}
+		}
+		// CONS_Printf("lagDelay:			%d\n",	lagDelay);
+
 		packetsize = sizeof (clientcmd_pak);
-		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds, 1);
+		G_MoveTiccmd(&netbuffer->u.clientpak.cmd, &localcmds[lagDelay], 1);
 		netbuffer->u.clientpak.consistancy = SHORT(consistancy[gametic%BACKUPTICS]);
 
 		// Send a special packet with 2 cmd for splitscreen
@@ -301,7 +357,7 @@ void CL_SendClientCmd(void)
 		{
 			netbuffer->packettype = (mis ? PT_CLIENT2MIS : PT_CLIENT2CMD);
 			packetsize = sizeof (client2cmd_pak);
-			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds2, 1);
+			G_MoveTiccmd(&netbuffer->u.client2pak.cmd2, &localcmds2[lagDelay], 1);
 		}
 
 		HSendPacket(servernode, false, 0, packetsize);
@@ -417,6 +473,22 @@ void SV_SendTics(void)
 	netnodes[0].supposedtic = maketic;
 }
 
+static inline void CreateNewLocalCMD(boolean dosplit, INT32 realtics)
+{
+	INT32 i;
+	ticcmd_t *mylocalcmd = (dosplit) ? localcmds2 : localcmds;
+
+	if (D_UseLocalDelay())
+	{
+		for (i = MAXGENTLEMENDELAY-1; i > 0; i--)
+			G_MoveTiccmd(&mylocalcmd[i], &mylocalcmd[i-1], 1);
+	}
+
+	G_BuildTiccmd(mylocalcmd, realtics, (dosplit) ? 2 : 1);
+
+	mylocalcmd[0].angleturn |= TICCMD_RECEIVED;
+}
+
 void Local_Maketic(INT32 realtics)
 {
 	I_OsPolling(); // I_Getevent
@@ -425,13 +497,11 @@ void Local_Maketic(INT32 realtics)
 	                   // and G_MapEventsToControls
 	if (!dedicated)
 		rendergametic = gametic;
+	
 	// translate inputs (keyboard/mouse/joystick) into game controls
-	G_BuildTiccmd(&localcmds, realtics, 1);
+	CreateNewLocalCMD(false, realtics);
 	if (splitscreen || botingame)
-		G_BuildTiccmd(&localcmds2, realtics, 2);
-
-	localcmds.angleturn |= TICCMD_RECEIVED;
-	localcmds2.angleturn |= TICCMD_RECEIVED;
+		CreateNewLocalCMD(true, realtics);
 }
 
 // create missed tic

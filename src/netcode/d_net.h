@@ -76,6 +76,5 @@ void Net_CloseConnection(INT32 node);
 void Net_ConnectionTimeout(INT32 node);
 void Net_AbortPacketType(UINT8 packettype);
 void Net_SendAcks(INT32 node);
-void Net_WaitAllAckReceived(UINT32 timeout);
 
 #endif

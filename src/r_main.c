@@ -156,7 +156,7 @@ void SendWeaponPref2(void);
 consvar_t cv_tailspickup = CVAR_INIT ("tailspickup", "On", CV_NETVAR|CV_ALLOWLUA, CV_OnOff, NULL);
 consvar_t cv_chasecam = CVAR_INIT ("chasecam", "On", CV_CALL, CV_OnOff, ChaseCam_OnChange);
 consvar_t cv_chasecam2 = CVAR_INIT ("chasecam2", "On", CV_CALL, CV_OnOff, ChaseCam2_OnChange);
-consvar_t cv_menubgcolor = CVAR_INIT ("menubgcolor", "Blue", CV_SAVE|CV_CALL, menubg_cons_t, NULL);
+consvar_t cv_menubgcolor = CVAR_INIT ("menubgcolor", "Blue", CV_SAVE|CV_CLIENT, menubg_cons_t, NULL);
 consvar_t cv_flipcam = CVAR_INIT ("flipcam", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam_OnChange);
 consvar_t cv_flipcam2 = CVAR_INIT ("flipcam2", "No", CV_SAVE|CV_CALL|CV_NOINIT, CV_YesNo, FlipCam2_OnChange);
 
@@ -165,7 +165,7 @@ consvar_t cv_skybox = CVAR_INIT ("skybox", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_allowmlook = CVAR_INIT ("allowmlook", "Yes", CV_NETVAR|CV_ALLOWLUA, CV_YesNo, NULL);
 consvar_t cv_showhud = CVAR_INIT ("showhud", "Yes", CV_CALL|CV_ALLOWLUA,  CV_YesNo, R_SetViewSize);
 consvar_t cv_translucenthud = CVAR_INIT ("translucenthud", "10", CV_SAVE, translucenthud_cons_t, NULL);
-consvar_t cv_moviemodeinfo = CVAR_INIT ("moviemodeinfo", "Yes", CV_CALL|CV_ALLOWLUA,  CV_YesNo, NULL);
+consvar_t cv_moviemodeinfo = CVAR_INIT ("moviemodeinfo", "Yes", CV_ALLOWLUA|CV_CLIENT,  CV_YesNo, NULL);
 
 consvar_t cv_translucency = CVAR_INIT ("translucency", "On", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_drawdist = CVAR_INIT ("drawdist", "Infinite", CV_SAVE, drawdist_cons_t, NULL);
@@ -174,7 +174,7 @@ consvar_t cv_drawdist_precip = CVAR_INIT ("drawdist_precip", "1024", CV_SAVE, dr
 consvar_t cv_fov = CVAR_INIT ("fov", "90", CV_SAVE|CV_FLOAT|CV_CALL, fov_cons_t, Fov_OnChange);
 consvar_t cv_fovchange = CVAR_INIT ("fovchange", "Off", CV_SAVE, CV_OnOff, NULL);
 consvar_t cv_maxportals = CVAR_INIT ("maxportals", "2", CV_SAVE, maxportals_cons_t, NULL);
-consvar_t cv_secbright = CVAR_INIT("r_secbright", "0", CV_SAVE, secbright_cons_t, NULL);
+consvar_t cv_secbright = CVAR_INIT("r_secbright", "0", CV_SAVE|CV_CLIENT, secbright_cons_t, NULL);
 
 consvar_t cv_renderview = CVAR_INIT ("renderview", "On", 0, CV_OnOff, NULL);
 consvar_t cv_renderwalls = CVAR_INIT ("r_renderwalls", "On", 0, CV_OnOff, NULL);
@@ -187,11 +187,13 @@ consvar_t cv_homremoval = CVAR_INIT ("homremoval", "No", CV_SAVE, homremoval_con
 
 consvar_t cv_renderstats = CVAR_INIT ("renderstats", "Off", 0, CV_OnOff, NULL);
 
-consvar_t cv_affinerotation = CVAR_INIT("affinerotation", "On", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_fakerollangle = CVAR_INIT ("fakerollangle", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_flashes = CVAR_INIT ("flashes", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
 
-consvar_t cv_affineprescale = CVAR_INIT ("affineprescale", "Off", CV_SAVE, CV_OnOff, NULL);
-consvar_t cv_affinemosaic = CVAR_INIT ("affinemosaic", "Off", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_affinerotation = CVAR_INIT("affinerotation", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+consvar_t cv_fakerollangle = CVAR_INIT ("fakerollangle", "Off", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+
+consvar_t cv_affineprescale = CVAR_INIT ("affineprescale", "Off", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+consvar_t cv_affinemosaic = CVAR_INIT ("affinemosaic", "Off", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
 
 void SplitScreen_OnChange(void)
 {
@@ -1682,6 +1684,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_cam_rotate);
 	CV_RegisterVar(&cv_cam_rotspeed);
 	CV_RegisterVar(&cv_cam_turnmultiplier);
+	CV_RegisterVar(&cv_cam_gamepadxsensitivity);
+	CV_RegisterVar(&cv_cam_gamepadysensitivity);
 	CV_RegisterVar(&cv_cam_orbit);
 	CV_RegisterVar(&cv_cam_adjust);
 
@@ -1692,6 +1696,8 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_cam2_rotate);
 	CV_RegisterVar(&cv_cam2_rotspeed);
 	CV_RegisterVar(&cv_cam2_turnmultiplier);
+	CV_RegisterVar(&cv_cam2_gamepadxsensitivity);
+	CV_RegisterVar(&cv_cam2_gamepadysensitivity);
 	CV_RegisterVar(&cv_cam2_orbit);
 	CV_RegisterVar(&cv_cam2_adjust);
 
@@ -1724,4 +1730,6 @@ void R_RegisterEngineStuff(void)
 
 	// Frame interpolation/uncapped
 	CV_RegisterVar(&cv_fpscap);
+
+	CV_RegisterVar(&cv_flashes);
 }

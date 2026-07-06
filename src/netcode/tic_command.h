@@ -13,6 +13,9 @@
 #ifndef __D_TIC_COMMAND__
 #define __D_TIC_COMMAND__
 
+#define GENTLEMANSMOOTHING (TICRATE)
+#define MAXGENTLEMENDELAY (TICRATE)
+
 #include "d_clisrv.h"
 #include "../d_ticcmd.h"
 #include "../doomdef.h"
@@ -21,15 +24,19 @@
 extern tic_t firstticstosend; // min of the nettics
 extern tic_t tictoclear; // optimize d_clearticcmd
 
-extern ticcmd_t localcmds;
-extern ticcmd_t localcmds2;
+extern ticcmd_t localcmds[MAXGENTLEMENDELAY];
+extern ticcmd_t localcmds2[MAXGENTLEMENDELAY];
 extern boolean cl_packetmissed;
 
 extern ticcmd_t netcmds[BACKUPTICS][MAXPLAYERS];
 
+extern tic_t lowest_lag;
+extern tic_t simulated_lag;
+
 tic_t ExpandTics(INT32 low, INT32 node);
 void D_Clearticcmd(tic_t tic);
 void D_ResetTiccmds(void);
+boolean D_UseLocalDelay(void);
 
 void PT_ClientCmd(SINT8 nodenum, INT32 netconsole);
 void PT_ServerTics(SINT8 node, INT32 netconsole);

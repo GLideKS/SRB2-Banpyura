@@ -22,6 +22,14 @@ boolean titlechanged = false;
 boolean introchanged = false;
 boolean bootmapchanged = false;
 
+INT32 freeslots_sfx = 0;
+INT32 freeslots_spr = 0;
+INT32 freeslots_s = 0;
+INT32 freeslots_mt = 0;
+INT32 freeslots_skincolor = 0;
+INT32 freeslots_spr2 = 0;
+INT32 freeslots_tol = 0;
+
 static int dbg_line;
 static INT32 deh_num_warning = 0;
 

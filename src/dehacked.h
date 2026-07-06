@@ -41,6 +41,14 @@ extern boolean titlechanged;
 extern boolean introchanged;
 extern boolean bootmapchanged;
 
+extern INT32 freeslots_sfx;
+extern INT32 freeslots_spr;
+extern INT32 freeslots_s;
+extern INT32 freeslots_mt;
+extern INT32 freeslots_skincolor;
+extern INT32 freeslots_spr2;
+extern INT32 freeslots_tol;
+
 #define MAX_ACTION_RECURSION 30
 extern const char *luaactions[MAX_ACTION_RECURSION];
 extern UINT8 luaactionstack;

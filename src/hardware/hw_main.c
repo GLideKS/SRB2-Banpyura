@@ -3347,6 +3347,7 @@ static void HWR_DrawBoundingBox(gl_vissprite_t *vis)
 {
 	FOutVector v[24];
 	FSurfaceInfo Surf = {0};
+	RGBA_t *palette = HWR_GetTexturePalette();
 
 	//
 	// create a cube (side view)
@@ -3386,7 +3387,7 @@ static void HWR_DrawBoundingBox(gl_vissprite_t *vis)
 	v[ 3].y = v[ 4].y = v[ 5].y = v[ 9].y = v[10].y = v[11].y =
 		v[15].y = v[16].y = v[17].y = v[21].y = v[22].y = v[23].y = vis->gzt; // top
 
-	Surf.PolyColor = V_GetColor(R_GetBoundingBoxColor(vis->mobj));
+	Surf.PolyColor = palette[R_GetBoundingBoxColor(vis->mobj)];
 
 	HWR_ProcessPolygon(&Surf, v, 24, (cv_renderhitboxgldepth.value ? 0 : PF_NoDepthTest)|PF_Modulated|PF_NoTexture|PF_WireFrame, SHADER_NONE, false);
 }
@@ -6117,6 +6118,7 @@ static void CV_glmodellighting_OnChange(void);
 static void CV_glpaletterendering_OnChange(void);
 static void CV_glpalettedepth_OnChange(void);
 static void CV_glshaders_OnChange(void);
+static void CV_gllightdithering_OnChange(void);
 
 static CV_PossibleValue_t glfiltermode_cons_t[]= {{HWD_SET_TEXTUREFILTER_POINTSAMPLED, "Nearest"},
 	{HWD_SET_TEXTUREFILTER_BILINEAR, "Bilinear"}, {HWD_SET_TEXTUREFILTER_TRILINEAR, "Trilinear"},
@@ -6156,6 +6158,7 @@ static CV_PossibleValue_t glpalettedepth_cons_t[] = {{16, "16 bits"}, {24, "24 b
 
 consvar_t cv_glpaletterendering = CVAR_INIT ("gr_paletterendering", "On", CV_SAVE|CV_CALL, CV_OnOff, CV_glpaletterendering_OnChange);
 consvar_t cv_glpalettedepth = CVAR_INIT ("gr_palettedepth", "16 bits", CV_SAVE|CV_CALL, glpalettedepth_cons_t, CV_glpalettedepth_OnChange);
+consvar_t cv_gllightdither = CVAR_INIT ("gr_lightdithering", "Off", CV_SAVE|CV_CALL|CV_CLIENT, CV_OnOff, CV_gllightdithering_OnChange);
 
 #define ONLY_IF_GL_LOADED if (vid.glstate != VID_GL_LIBRARY_LOADED) return;
 consvar_t cv_glwireframe = CVAR_INIT ("gr_wireframe", "Off", 0, CV_OnOff, NULL);
@@ -6209,6 +6212,15 @@ static void CV_glshaders_OnChange(void)
 	}
 }
 
+static void CV_gllightdithering_OnChange(void)
+{
+	ONLY_IF_GL_LOADED
+	if (gl_shadersavailable)
+	{
+		HWR_CompileShaders();
+	}
+}
+
 //added by Hurdler: console varibale that are saved
 void HWR_AddCommands(void)
 {
@@ -6238,6 +6250,7 @@ void HWR_AddCommands(void)
 
 	CV_RegisterVar(&cv_glpaletterendering);
 	CV_RegisterVar(&cv_glpalettedepth);
+	CV_RegisterVar(&cv_gllightdither);
 	CV_RegisterVar(&cv_glwireframe);
 }
 

@@ -83,7 +83,7 @@ static CV_PossibleValue_t constextsize_cons_t[] = {
 static void CV_constextsize_OnChange(void);
 consvar_t cv_constextsize = CVAR_INIT ("con_textsize", "Medium", CV_SAVE|CV_CALL, constextsize_cons_t, CV_constextsize_OnChange);
 
-consvar_t cv_menucaps = CVAR_INIT ("menucaps", "On", CV_SAVE, CV_OnOff, NULL);
+consvar_t cv_menucaps = CVAR_INIT ("menucaps", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
 
 static CV_PossibleValue_t menucolor_cons_t[] = {
 	{0, "White"},
@@ -93,7 +93,7 @@ static CV_PossibleValue_t menucolor_cons_t[] = {
 	{V_PURPLEMAP, "Purple"}, {V_MAGENTAMAP, "Magenta"}, {V_ROSYMAP, "Rosy"},
 	{V_BROWNMAP, "Brown"}, {V_GRAYMAP, "Gray"}, {V_INVERTMAP, "Inverted"},
 	{0, NULL} };
-consvar_t cv_menucolor = CVAR_INIT("menucolor", "Yellow", CV_SAVE, menucolor_cons_t, NULL);
+consvar_t cv_menucolor = CVAR_INIT("menucolor", "Yellow", CV_SAVE|CV_CLIENT, menucolor_cons_t, NULL);
 
 // local copy of the palette for V_GetColor()
 RGBA_t *pLocalPalette = NULL;
@@ -1613,7 +1613,7 @@ static UINT32 V_GetHWConsBackColor(void)
 	switch (cons_backcolor.value)
 	{
 		case 0:		r = 0xff; g = 0xff; b = 0xff;	break; 	// White
-		case 1:		r = 0x80; g = 0x80; b = 0x80;	break; 	// Black
+		case 1:		r = 0x01; g = 0x01; b = 0x01;	break; 	// Black -- it was gray, not totally black
 		case 2:		r = 0xde; g = 0xb8; b = 0x87;	break;	// Sepia
 		case 3:		r = 0x40; g = 0x20; b = 0x10;	break; 	// Brown
 		case 4:		r = 0xfa; g = 0x80; b = 0x72;	break; 	// Pink
@@ -1631,6 +1631,7 @@ static UINT32 V_GetHWConsBackColor(void)
 		case 16:	r = 0x00; g = 0x00; b = 0xff;	break; 	// Blue
 		case 17:	r = 0xff; g = 0x00; b = 0xff;	break; 	// Purple
 		case 18:	r = 0xee; g = 0x82; b = 0xee;	break; 	// Lavender
+		case 19:	r = 0x80; g = 0x80; b = 0x80;	break; 	// Gray
 		// Default green
 		default:	r = 0x00; g = 0x80; b = 0x00;	break;
 	}
@@ -2176,6 +2177,7 @@ void V_DrawPromptBack(INT32 boxheight, INT32 color)
 			case 16:	hwcolor = 0x0000ff00;	break; 	// Blue
 			case 17:	hwcolor = 0xff00ff00;	break; 	// Purple
 			case 18:	hwcolor = 0xee82ee00;	break; 	// Lavender
+			case 19:	hwcolor = 0x80808000;	break; 	// Gray
 			// Default green
 			default:	hwcolor = 0x00800000;	break;
 		}

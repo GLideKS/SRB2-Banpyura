@@ -364,6 +364,9 @@ extern menu_t *currentMenu;
 extern menu_t MainDef;
 extern menu_t SP_LoadDef;
 
+// the haxor message menu
+extern menu_t MessageDef;
+
 // Call upon joystick hotplug
 void M_SetupJoystickMenu(INT32 choice);
 extern menu_t OP_JoystickSetDef;

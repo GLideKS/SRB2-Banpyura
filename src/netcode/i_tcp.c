@@ -722,7 +722,8 @@ static void SOCK_Send(void)
 	if (c == ERRSOCKET && e != 0) // 0 means no socket for the address family was found
 	{
 		if (!ALLOWEDERROR(e))
-			I_Error("SOCK_Send, error sending to node %d (%s) #%u, %s", doomcom->remotenode,
+			// I_Error("SOCK_Send, error sending to node %d (%s) #%u: %s", doomcom->remotenode,
+			CONS_Alert(CONS_WARNING, "SOCK_Send, error sending to node %d (%s) #%u: %s\n", doomcom->remotenode,
 				SOCK_GetNodeAddress(doomcom->remotenode), e, strerror(e));
 	}
 }

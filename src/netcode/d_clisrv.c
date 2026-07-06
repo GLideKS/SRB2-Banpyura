@@ -72,6 +72,8 @@ boolean serverrunning = false;
 INT32 serverplayer = 0;
 char motd[254], server_context[8]; // Message of the Day, Unique Context (even without Mumble support)
 
+plrinfo_pak playerinfo[MAXPLAYERS];
+
 netnode_t netnodes[MAXNETNODES];
 
 // Server specific vars
@@ -95,6 +97,9 @@ UINT32 adminpasscount = 0;
 
 tic_t neededtic;
 SINT8 servernode = 0; // the number of the server node
+SINT8 joinnode = 0; // used for CL_VIEWSERVER
+
+INT32 viewfiles = 0; // used for CL_CONFIRMCONNECT
 
 boolean acceptnewnode = true;
 
@@ -120,6 +125,10 @@ consvar_t cv_idleaction = CVAR_INIT ("idleaction", "Spectate", CV_SAVE|CV_NETVAR
 consvar_t cv_idletime = CVAR_INIT ("idletime", "3", CV_SAVE|CV_NETVAR, CV_Unsigned, NULL);
 
 consvar_t cv_httpsource = CVAR_INIT ("http_source", "", CV_SAVE, NULL, NULL);
+
+static CV_PossibleValue_t mindelay_cons_t[] = {{0, "MIN"}, {30, "MAX"}, {0, NULL}};
+consvar_t cv_mindelay = CVAR_INIT ("mindelay", "0", CV_SAVE|CV_CLIENT, mindelay_cons_t, NULL);
+consvar_t cv_gentlemens = CVAR_INIT ("gentlemensdelay", "Off", CV_SAVE|CV_CLIENT, CV_OnOff, NULL); // this should be a netvar Zzz...
 
 void ResetNode(INT32 node)
 {
@@ -148,6 +157,8 @@ void CL_Reset(void)
 	D_CloseConnection(); // netgame = false
 	multiplayer = false;
 	servernode = 0;
+	joinnode = 0;
+	viewfiles = 0;
 	server = true;
 	doomcom->numnodes = 1;
 	doomcom->numslots = 1;
@@ -1159,7 +1170,7 @@ static void HandlePacketFromAwayNode(SINT8 node)
 		case PT_CLIENTJOIN     : PT_ClientJoin     (node    ); break;
 		case PT_SERVERSHUTDOWN : PT_ServerShutdown (node    ); break;
 		case PT_CLIENTCMD      :                               break; // This is not an "unknown packet"
-		case PT_PLAYERINFO     :                               break; // This is not an "unknown packet"
+		case PT_PLAYERINFO     : PT_PlayerInfo     (node    ); break;
 
 		default:
 			DEBFILE(va("unknown packet received (%d) from unknown host\n",netbuffer->packettype));
@@ -1344,15 +1355,79 @@ boolean TryRunTics(tic_t realtics)
 
 static void UpdatePingTable(void)
 {
+	tic_t fastest;
+	tic_t lag;
+
+	INT32 i;
+
 	if (server)
 	{
 		if (netgame && !(gametime % 35)) // update once per second.
 			PingUpdate();
+		
+		fastest = 0;
+
 		// update node latency values so we can take an average later.
-		for (INT32 i = 0; i < MAXPLAYERS; i++)
+		for (i = 0; i < MAXPLAYERS; i++)
+		{
 			if (playeringame[i] && playernode[i] != UINT8_MAX)
+			{
 				realpingtable[i] += G_TicsToMilliseconds(GetLag(playernode[i]));
+				
+				if (D_UseLocalDelay() && !players[i].spectator)
+				{
+					lag = GetLag(playernode[i]);
+					if (!fastest || lag < fastest)
+						fastest = lag;
+				}
+			}
+		}
+
+		if (D_UseLocalDelay())
+		{
+			lowest_lag = fastest;
+
+			// Don't gentleman below your mindelay
+			if (lowest_lag < (tic_t)cv_mindelay.value)
+				lowest_lag = (tic_t)cv_mindelay.value;
+
+			simulated_lag = lowest_lag;
+		}
+		else
+			lowest_lag = simulated_lag = 0;
+		
 		pingmeasurecount++;
+	}
+	else // We're a client, handle mindelay on the way out.
+	{
+		if (D_UseLocalDelay())
+		{
+			// Previously (neededtic - gametic) - WRONG VALUE!
+			// Pretty sure that's measuring jitter, not RTT.
+			// Stable connections would be punished by adding their mindelay to network delay!
+			tic_t mydelay = (neededtic - gametic); // players[consoleplayer].cmd.latency;
+			
+			/*
+			CONS_Printf("\x82Local delay start\n");
+			CONS_Printf("GetLag:		%d\n",GetLag(playernode[consoleplayer]));
+			CONS_Printf("pingtable:		%d\n",playerpingtable[consoleplayer]);
+			CONS_Printf("cmd.latency:	%d\n",players[consoleplayer].cmd.latency);
+			*/
+
+			if (mydelay < (tic_t)cv_mindelay.value)
+			{
+				// i dont see the reason behind why we subtract our current delay?
+				lowest_lag = ((tic_t)cv_mindelay.value); // - mydelay);
+				simulated_lag = (tic_t)cv_mindelay.value;
+			}
+			else
+				lowest_lag = simulated_lag = 0;
+
+			// CONS_Printf("lowest_lag:	%d\n",lowest_lag);
+			// CONS_Printf("simulated_lag: %d\n",simulated_lag);
+		}
+		else
+			lowest_lag = simulated_lag = 0;
 	}
 }
 

@@ -116,6 +116,8 @@ extern consvar_t cv_perfstats;
 extern consvar_t cv_ps_samplesize;
 extern consvar_t cv_ps_descriptor;
 
+extern consvar_t cv_cvarinformation;
+
 extern char timedemo_name[256];
 extern boolean timedemo_csv;
 extern char timedemo_csv_id[256];

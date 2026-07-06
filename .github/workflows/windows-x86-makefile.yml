@@ -1,0 +1,36 @@
+name: Windows x86 Makefile
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    env:
+      PREFIX: i686-w64-mingw32
+      CC: /usr/bin/i686-w64-mingw32-gcc-posix
+      CXX: /usr/bin/i686-w64-mingw32-g++-posix
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: |
+            # apt_toolchain
+            echo -e "\e[0Ksection_start:`date +%s`:apt_toolchain[collapsed=true]\r\e[0KInstalling toolchain packages"
+            sudo apt-get install gcc-mingw-w64-i686-win32
+            # apt_toolchain
+            echo -e "\e[0Ksection_end:`date +%s`:apt_toolchain\r\e[0K"
+            # make
+            echo -e "\e[0Ksection_start:`date +%s`:make[collapsed=false]\r\e[0KCompiling SRB2"
+            make --directory=src --keep-going MINGW=1 SDL=1 || make --directory=src --keep-going MINGW=1 SDL=1
+            # make
+            echo -e "\e[0Ksection_end:`date +%s`:make\r\e[0K"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.sha }}-Win32-makefile
+          path: |
+            bin/
+            src/comptime.h

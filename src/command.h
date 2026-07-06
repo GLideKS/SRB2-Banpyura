@@ -33,6 +33,8 @@ typedef enum
 	// COM_AddCommand: without this flag, the command
 	// CANNOT be run from Lua.
 	COM_LUA         = 8,
+	COM_LUACOM		= 16,
+	COM_CLIENT		= 32,
 } com_flags_t;
 
 typedef void (*com_func_t)(void);
@@ -125,6 +127,8 @@ typedef enum
                    // used on menus
 	CV_CHEAT = 2048, // Don't let this be used in multiplayer unless cheats are on.
 	CV_ALLOWLUA = 4096,/* Let this be called from Lua */
+	CV_CLIENT = 8192,
+	CV_LUAVAR = 16384,
 } cvflags_t;
 
 typedef struct CV_PossibleValue_s

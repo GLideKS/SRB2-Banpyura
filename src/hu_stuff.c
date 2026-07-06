@@ -15,6 +15,7 @@
 #include "byteptr.h"
 #include "hu_stuff.h"
 
+#include "doomtype.h"
 #include "m_menu.h" // gametype_cons_t
 #include "m_cond.h" // emblems
 #include "m_misc.h" // word jumping
@@ -22,6 +23,7 @@
 #include "netcode/d_clisrv.h"
 #include "netcode/net_command.h"
 #include "netcode/gamestate.h"
+#include "netcode/tic_command.h"
 
 #include "g_game.h"
 #include "g_input.h"
@@ -83,9 +85,10 @@ boolean chat_on; // entering a chat message?
 boolean chat_on_first_event; // blocker for first chat input event
 static char w_chat[HU_MAXMSGLEN + 1];
 static size_t c_input = 0; // let's try to make the chat input less shitty.
+static size_t c_selection = 0; // whatevers inbetween this and c_input is selected, if c_input = c_selection, then there's no selection.
 static boolean headsupactive = false;
 boolean hu_showscores; // draw rankings
-static char hu_tick;
+static UINT16 hu_tick;
 
 patch_t *rflagico;
 patch_t *bflagico;
@@ -395,8 +398,11 @@ void HU_AddChatText(const char *text, boolean playsound)
 
 	if (OLDCHAT) // if we're using oldchat, print directly in console
 		CONS_Printf("%s\n", text);
-	else			// if we aren't, still save the message to log.txt
-		CON_LogMessage(va("%s\n", text));
+	else			// if we aren't, still save the message to log.txt	
+	{
+		CON_LogMessage(text);
+		CON_LogMessage("\n"); // Add newline. Don't use va for that, since `text` might be refering to va's buffer itself
+	}
 }
 
 /** Runs a say command, sending an ::XD_SAY message.
@@ -444,7 +450,7 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 
 	// We handle HU_SERVER_SAY, not the caller.
 	flags &= ~HU_SERVER_SAY;
-	if(dedicated && !(flags & HU_CSAY))
+	if (dedicated && !(flags & HU_CSAY))
 		flags |= HU_SERVER_SAY;
 
 	buf[0] = target;
@@ -501,6 +507,14 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 		buf[0] = target;
 		newmsg = msg+5+spc;
 		strlcpy(msg, newmsg, HU_MAXMSGLEN + 1);
+	}
+
+	// So dedicated servers can crash entirely from submitting a message of "great" length.
+	// If over DEDI_MAXMSGLEN, notify them and bail!
+	if (dedicated && (flags & HU_SERVER_SAY) && strlen(msg) > DEDI_MAXMSGLEN)
+	{
+		CONS_Printf("NOTICE: Too long, not sending! (max: %i, length: %li)\n", DEDI_MAXMSGLEN, strlen(msg));
+		return;
 	}
 
 	SendNetXCmd(XD_SAY, buf, strlen(msg) + 1 + msg-buf);
@@ -866,7 +880,7 @@ void HU_Ticker(void)
 		return;
 
 	hu_tick++;
-	hu_tick &= 7; // currently only to blink chat input cursor
+	hu_tick &= 15; // currently only to blink chat input cursor
 
 	if (PLAYER1INPUTDOWN(GC_SCORES))
 		hu_showscores = !chat_on;
@@ -938,7 +952,7 @@ static void HU_sendChatMessage(void)
 	buf[ci] = '\0';
 
 	memset(w_chat, '\0', sizeof(w_chat));
-	c_input = 0;
+	c_selection = c_input = 0;
 
 	// last minute mute check
 	if (CHAT_MUTE)
@@ -1012,12 +1026,45 @@ static void HU_sendChatMessage(void)
 
 void HU_clearChatChars(void)
 {
-	memset(w_chat, '\0', sizeof(w_chat));
 	I_SetTextInputMode(false);
 	chat_on = false;
-	c_input = 0;
+	if (cv_chat_clearonexit.value)
+	{
+		memset(w_chat, '\0', sizeof(w_chat));
+		c_selection = c_input = 0;
+	}
 
 	I_UpdateMouseGrab();
+}
+
+// deletes currently selected chat characters
+// based on CON_InputDelSelection()
+static void Chat_DeleteSelection(void)
+{
+	size_t start, end, len, clen;
+
+	if (c_selection == c_input)
+		return; // no need to delete anything
+
+	clen = strlen(w_chat);
+
+	if (c_input > c_selection)
+	{
+		start = c_selection;
+		end = c_input;
+	}
+	else
+	{
+		start = c_input;
+		end = c_selection;
+	}
+	len = (end - start);
+
+	if (end != clen)
+		memmove(&w_chat[start], &w_chat[end], clen-end);
+	memset(&w_chat[clen - len], 0, len);
+
+	c_selection = c_input = start;
 }
 
 //
@@ -1054,34 +1101,29 @@ boolean HU_Responder(event_t *ev)
 
 	c = (INT32)ev->key;
 
+	boolean talkkey = (ev->key == gamecontrol[GC_TALKKEY][0] || ev->key == gamecontrol[GC_TALKKEY][1]);
+	boolean teamkey = (ev->key == gamecontrol[GC_TEAMKEY][0] || ev->key == gamecontrol[GC_TEAMKEY][1]);
+
 	if (!chat_on)
 	{
 		if (ev->type == ev_text)
 			return false;
 
 		// enter chat mode
-		if ((ev->key == gamecontrol[GC_TALKKEY][0] || ev->key == gamecontrol[GC_TALKKEY][1])
-			&& netgame && !OLD_MUTE) // check for old chat mute, still let the players open the chat incase they want to scroll otherwise.
+		if ((talkkey || teamkey) && netgame && !OLD_MUTE) // check for old chat mute, still let the players open the chat incase they want to scroll otherwise.
 		{
 			I_SetTextInputMode(true);
 			chat_on = true;
 			chat_on_first_event = false;
-			w_chat[0] = 0;
-			teamtalk = false;
+			if (cv_chat_clearonexit.value)
+			{
+				w_chat[0] = 0;
+				c_selection = c_input = 0;
+			}
+			teamtalk = (teamkey ? G_GametypeHasTeams() : false);
 			chat_scrollmedown = true;
 			typelines = 1;
-			return true;
-		}
-		if ((ev->key == gamecontrol[GC_TEAMKEY][0] || ev->key == gamecontrol[GC_TEAMKEY][1])
-			&& netgame && !OLD_MUTE)
-		{
-			I_SetTextInputMode(true);
-			chat_on = true;
-			chat_on_first_event = false;
-			w_chat[0] = 0;
-			teamtalk = G_GametypeHasTeams(); // Don't teamtalk if we don't have teams.
-			chat_scrollmedown = true;
-			typelines = 1;
+			hu_tick = 0;
 			return true;
 		}
 	}
@@ -1093,7 +1135,8 @@ boolean HU_Responder(event_t *ev)
 			// we need to make sure that nothing is displayed once the chat
 			// opens, otherwise a 't' would be outputted.
 			chat_on_first_event = true;
-			return true;
+			if (c != KEY_ENTER && cv_chat_clearonexit.value) // Let me send!!!!
+				return true;
 		}
 
 		if (ev->type == ev_text)
@@ -1107,9 +1150,14 @@ boolean HU_Responder(event_t *ev)
 			if (CHAT_MUTE || strlen(w_chat) >= HU_MAXMSGLEN)
 				return true;
 
+			hu_tick = 0; // romoney5: reset blinking
+
+			Chat_DeleteSelection();
+
 			memmove(&w_chat[c_input + 1], &w_chat[c_input], strlen(w_chat) - c_input + 1);
 			w_chat[c_input] = c;
-			c_input++;
+
+			c_selection = (c_input += 1);
 			return true;
 		}
 
@@ -1121,91 +1169,271 @@ boolean HU_Responder(event_t *ev)
 		 || ev->key == KEY_LALT || ev->key == KEY_RALT)
 			return true;
 
-		// pasting. pasting is cool. chat is a bit limited, though :(
-		if (c == 'v' && ctrldown)
-		{
-			const char *paste;
-			size_t chatlen;
-			size_t pastelen;
-
-			if (CHAT_MUTE)
-				return true;
-
-			paste = I_ClipboardPaste();
-			if (paste == NULL)
-				return true;
-
-			chatlen = strlen(w_chat);
-			pastelen = strlen(paste);
-			if (chatlen+pastelen > HU_MAXMSGLEN)
-				return true; // we can't paste this!!
-
-			memmove(&w_chat[c_input + pastelen], &w_chat[c_input], (chatlen - c_input) + 1); // +1 for '\0'
-			memcpy(&w_chat[c_input], paste, pastelen); // copy all of that.
-			c_input += pastelen;
-			return true;
-		}
-		else if (c == KEY_ENTER)
+		if (c == KEY_ENTER)
 		{
 			if (!CHAT_MUTE)
 				HU_sendChatMessage();
 
 			I_SetTextInputMode(false);
 			chat_on = false;
-			c_input = 0; // reset input cursor
+			c_selection = c_input = 0; // reset cursor entirely
 			chat_scrollmedown = true; // you hit enter, so you might wanna autoscroll to see what you just sent. :)
 			I_UpdateMouseGrab();
+			return true; // Probably eat this...?
 		}
-		else if (c == KEY_ESCAPE
-			|| ((c == gamecontrol[GC_TALKKEY][0] || c == gamecontrol[GC_TALKKEY][1]
-			|| c == gamecontrol[GC_TEAMKEY][0] || c == gamecontrol[GC_TEAMKEY][1])
-			&& c >= KEY_MOUSE1)) // If it's not a keyboard key, then the chat button is used as a toggle.
+		else if (c == KEY_ESCAPE || ((talkkey || teamkey) && c >= KEY_MOUSE1)) // If it's not a keyboard key, then the chat button is used as a toggle.
 		{
 			I_SetTextInputMode(false);
 			chat_on = false;
-			c_input = 0; // reset input cursor
+
+			if (cv_chat_clearonexit.value)
+				c_selection = c_input = 0; // reset cursor entirely
+
 			I_UpdateMouseGrab();
+			return true;
 		}
-		else if ((c == KEY_UPARROW || c == KEY_MOUSEWHEELUP) && chat_scroll > 0 && !OLDCHAT) // CHAT SCROLLING YAYS!
-		{
-			chat_scroll--;
-			justscrolledup = true;
-			chat_scrolltime = 4;
-		}
-		else if ((c == KEY_DOWNARROW || c == KEY_MOUSEWHEELDOWN) && chat_scroll < chat_maxscroll && chat_maxscroll > 0 && !OLDCHAT)
-		{
-			chat_scroll++;
-			justscrolleddown = true;
-			chat_scrolltime = 4;
-		}
-		else if (c == KEY_LEFTARROW && c_input != 0 && !OLDCHAT) // i said go back
-		{
-			if (ctrldown)
-				c_input = M_JumpWordReverse(w_chat, c_input);
-			else
-				c_input--;
-		}
-		else if (c == KEY_RIGHTARROW && c_input < strlen(w_chat) && !OLDCHAT) // don't need to check for admin or w/e here since the chat won't ever contain anything if it's muted.
-		{
-			if (ctrldown)
-				c_input += M_JumpWord(&w_chat[c_input]);
-			else
-				c_input++;
-		}
-		else if (c == KEY_BACKSPACE)
-		{
-			if (CHAT_MUTE || c_input <= 0)
-				return true;
 
-			memmove(&w_chat[c_input - 1], &w_chat[c_input], strlen(w_chat) - c_input + 1);
-			c_input--;
-		}
-		else if (c == KEY_DEL)
+		// CTRL modifiers!
+		if (ctrldown)
 		{
-			if (CHAT_MUTE || c_input >= strlen(w_chat))
-				return true;
+			size_t chatlen = strlen(w_chat);
 
-			memmove(&w_chat[c_input], &w_chat[c_input + 1], strlen(w_chat) - c_input);
+			switch(c)
+			{
+				case 'v':
+					if (CHAT_MUTE)
+						return true;
+
+					const char *paste = I_ClipboardPaste();
+					size_t pastelen;
+
+					if (paste == NULL)
+						return true;
+
+					pastelen = strlen(paste);
+					if (chatlen+pastelen > HU_MAXMSGLEN)
+					{
+						HU_AddChatText(va("%s>ERROR: Too long to paste!", "\x85"), false);
+						return true; // we can't paste this!!
+					}
+
+					Chat_DeleteSelection(); // ctrl+v replaces selection
+
+					memmove(&w_chat[c_input + pastelen], &w_chat[c_input], (chatlen - c_input) + 1); // +1 for '\0'
+					memcpy(&w_chat[c_input], paste, pastelen); // copy all of that.
+
+					c_selection = (c_input += pastelen);
+					return true;
+				case 'c':
+					if (CHAT_MUTE || chatlen == 0) // check length anyway for safetys sake
+						return true;
+
+					// The following has been taken from console.c
+					if (c_selection == c_input) // nothing to copy!
+						return true;
+					else if (c_selection > c_input)
+						I_ClipboardCopy(&w_chat[c_input], c_selection-c_input);
+					else
+						I_ClipboardCopy(&w_chat[c_selection], c_input-c_selection);
+					return true;
+				case 'x':
+					if (CHAT_MUTE || chatlen == 0) // check length anyway for safetys sake
+						return true;
+
+					if (c_selection == c_input) // Nothing
+						return true;
+					else if (c_selection > c_input)
+						I_ClipboardCopy(&w_chat[c_input], c_selection-c_input);
+					else
+						I_ClipboardCopy(&w_chat[c_selection], c_input-c_selection);
+
+					Chat_DeleteSelection();
+					return true;
+				case 'a':
+					if (CHAT_MUTE || chatlen == 0) // check length anyway for safetys sake
+						return true;
+
+					c_selection = 0;
+					c_input = chatlen;
+					return true;
+				case 'w':
+					// "Close current tab or open file". Here it's a very quick shortcut to wipe input
+					// (TL;DR: CTRL+A+BACKSPACE but instant, probably unnecessary, -
+					// - but it pairs very nicely with cv_chat_clearonexit off imo)
+					memset(w_chat, '\0', sizeof(w_chat));
+					c_selection = c_input = 0;
+					return true;
+				case 'r':
+					if ((chat_nummsg_log < 1) || OLDCHAT)
+						return true;
+
+					for (size_t i=0; chat_nummsg_log; i++)
+						HU_removeChatText_Log();
+
+					if (chat_nummsg_min == 0)
+						return true;
+
+					for (size_t i=0; chat_nummsg_min; i++)
+						HU_removeChatText_Mini();
+
+					return true;
+				case 't':
+					// every cpu past like the '90s (iirc) does one instruction for xor
+					// and itll be optimized to this anyways so... :lazy:
+					teamtalk ^= 1;
+					return true;
+				default:
+					break; // Might be some KEY_* constant and not a character.
+			}
+		}
+
+		// handler for arrow keys
+		switch(c)
+		{
+			case KEY_PGUP:
+			case KEY_MOUSEWHEELUP:
+			case KEY_UPARROW:
+				if (chat_scroll == 0 || OLDCHAT)
+					return true;
+
+				if (ctrldown || c == KEY_PGUP)
+				{
+					chat_scroll = 0;
+				}
+				else
+				{
+					chat_scroll--;
+					justscrolledup = true;
+					chat_scrolltime = 4;
+				}
+
+				return true;
+			case KEY_PGDN:
+			case KEY_MOUSEWHEELDOWN:
+			case KEY_DOWNARROW:
+				if (OLDCHAT || chat_scroll > chat_maxscroll || chat_maxscroll == 0)
+					return true;
+
+				if (ctrldown || c == KEY_PGDN)
+					chat_scrollmedown = true;
+				else
+				{
+					chat_scroll++;
+					justscrolleddown = true;
+					chat_scrolltime = 4;
+				}
+
+				return true;
+			case KEY_LEFTARROW:
+				hu_tick = 0;
+				if (ctrldown) // move back a word (or ctrl+shift select)
+				{
+					c_input = M_JumpWordReverse(w_chat, c_input);
+					if (!shiftdown) // just regular ctrl-select
+						c_selection = c_input;
+				}
+				else if (shiftdown && c_input != 0) // shift-select a character behind
+					c_input--;
+				else if (!(shiftdown || ctrldown)) // regular movement
+				{
+					if (c_selection == c_input) // no selection, move the cursor
+					{
+						c_input = max((INT32)c_input - 1, 0);
+						c_selection = c_input;
+					}
+					else // was selecting, move the cursor to the start of the selection
+					{
+						c_input = min(c_input, c_selection);
+						c_selection = c_input;
+					}
+				}
+
+				return true;
+			case KEY_RIGHTARROW:
+				hu_tick = 0;
+				if (ctrldown) // move forward a word (or ctrl+shift select)
+				{
+					c_input += M_JumpWord(&w_chat[c_input]);
+					if (!shiftdown) // just regular ctrl-select
+						c_selection = c_input;
+				}
+				else if (shiftdown && c_input < strlen(w_chat)) // shift-select a character in front
+					c_input++;
+				else if (!(shiftdown || ctrldown)) // regular movement
+				{
+					if (c_selection == c_input) // no selection, move the cursor
+					{
+						c_input = min(c_input + 1, strlen(w_chat));
+						c_selection = c_input;
+					}
+					else // was selecting, move the cursor to the end of the selection
+					{
+						c_input = max(c_input, c_selection);
+						c_selection = c_input;
+					}
+				}
+
+				return true;
+			case KEY_BACKSPACE:
+				if (CHAT_MUTE || (c_input == 0 && c_selection == c_input))
+					return true;
+
+				hu_tick = 0;
+
+				if (ctrldown)
+					c_selection = M_JumpWordReverse(w_chat, c_input);
+
+				if (c_selection == c_input)
+				{
+					memmove(&w_chat[c_input - 1], &w_chat[c_input], strlen(w_chat) - c_input + 1);
+					c_selection = (c_input -= 1);
+				}
+				else
+					Chat_DeleteSelection();
+
+				return true;
+			case KEY_DEL:
+				if (CHAT_MUTE || (c_input >= strlen(w_chat) && c_selection == c_input))
+					return true;
+
+				hu_tick = 0;
+
+				if (ctrldown)
+					c_input += M_JumpWord(&w_chat[c_input]);
+
+				if (c_selection == c_input)
+					memmove(&w_chat[c_input], &w_chat[c_input + 1], strlen(w_chat) - c_input);
+				else
+					Chat_DeleteSelection();
+
+				return true;
+			case KEY_HOME:
+				if (CHAT_MUTE)
+					return true;
+
+				hu_tick = 0;
+
+				if (shiftdown)
+					c_selection = 0;
+				else
+					c_selection = c_input = 0;
+
+				return true;
+			case KEY_END:
+				if (CHAT_MUTE)
+					return true;
+
+				hu_tick = 0;
+
+				if (shiftdown)
+					c_selection = strlen(w_chat);
+				else
+					c_selection = c_input = strlen(w_chat);
+
+				return true;
+			default:
+				break;
+
 		}
 
 		return true;
@@ -1213,7 +1441,6 @@ boolean HU_Responder(event_t *ev)
 
 	return false;
 }
-
 
 //======================================================================
 //                         HEADS UP DRAWING
@@ -1302,7 +1529,7 @@ static void HU_drawMiniChat(void)
 				prev_linereturn = false;
 
 				if (cv_chatbacktint.value) // on request of wolfy
-					V_DrawFillConsoleMap(x + dx + 2, y+dy, charwidth, charheight, 239|chatsnap);
+					V_DrawFill(x + dx + 2, y+dy, charwidth, charheight, CHATOPACITY|cv_menubgcolor.value|chatsnap);
 
 				V_DrawChatCharacter(x + dx + 2, y+dy, msg[j] |chatsnap|V_MONOSPACE|transflag, true, colormap);
 				dx += charwidth;
@@ -1365,7 +1592,8 @@ static void HU_drawChatLog(INT32 offset)
 	chat_topy = y + chat_scroll*charheight;
 	chat_bottomy = chat_topy + boxh*charheight;
 
-	V_DrawFillConsoleMap(chatx, chat_topy, boxw, boxh*charheight +2, 239|chatsnap); // log box
+	if (cv_chatbacktint.value)
+		V_DrawFill(chatx, chat_topy, boxw, boxh*charheight +2, CHATOPACITY|cv_menubgcolor.value|chatsnap); // log box
 
 	for (i=0; i<chat_nummsg_log; i++) // iterate through our chatlog
 	{
@@ -1444,7 +1672,10 @@ static void HU_DrawChat(void)
 	INT32 boxw = cv_chatwidth.value;
 	INT32 t = 0, c = 0, y = chaty - (typelines*charheight);
 	UINT32 i = 0, saylen = strlen(w_chat); // You learn new things everyday!
+	UINT32 typed_chars = 0;
 	INT32 cflag = 0;
+	INT32 cursorx, cursory;
+	UINT16 cursorblink = hu_tick;
 	const char *ntalk = "Say: ", *ttalk = "Team: ";
 	const char *talk = ntalk;
 
@@ -1473,7 +1704,8 @@ static void HU_DrawChat(void)
 		cflag = V_GRAYMAP; // set text in gray if chat is muted.
 	}
 
-	V_DrawFillConsoleMap(chatx, y-1, boxw, (typelines*charheight), 239 | chatsnap);
+	if (cv_chatbacktint.value)
+		V_DrawFill(chatx, y-1, boxw, (typelines*charheight), CHATOPACITY|cv_menubgcolor.value|chatsnap);
 
 	for (i = 0; talk[i]; i++)
 	{
@@ -1491,18 +1723,16 @@ static void HU_DrawChat(void)
 
 	typelines = 1;
 
-	if ((strlen(w_chat) == 0 || c_input == 0) && hu_tick < 4)
-		V_DrawChatCharacter(chatx + 2 + c, y+1, '_' |chatsnap|t, true, NULL);
+	cursorx = chatx + 2 + c;
+	cursory = y;
 
 	for (i = 0; w_chat[i]; i++)
 	{
 		boolean skippedline = false;
 		if (c_input == (i+1))
 		{
-			INT32 cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
-			INT32 cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
-			if (hu_tick < 4)
-				V_DrawChatCharacter(cursorx, cursory+1, '_' |chatsnap|t, true, NULL);
+			cursorx = (c+charwidth < boxw-charwidth) ? (chatx + 2 + c+charwidth) : (chatx+1); // we may have to go down.
+			cursory = (cursorx != chatx+1) ? (y) : (y+charheight);
 
 			if (cursorx == chatx+1 && saylen == i) // a weirdo hack
 			{
@@ -1512,7 +1742,11 @@ static void HU_DrawChat(void)
 		}
 
 		if (w_chat[i] >= FONTSTART)
-			V_DrawChatCharacter(chatx + c + 2, y, w_chat[i] | chatsnap | t, true, NULL);
+		{
+			if ((c_selection > i && c_input <= i) || (c_selection <= i && c_input > i))
+				V_DrawFill(chatx+c+2, y-1, charwidth, charheight, V_VMAPToPaletteIndex(cv_menucolor.value)|chatsnap|t);
+			V_DrawChatCharacter(chatx+c+2, y, w_chat[i] | chatsnap | t, true, NULL);
+		}
 
 		c += charwidth;
 		if (c > boxw-charwidth && !skippedline)
@@ -1521,6 +1755,27 @@ static void HU_DrawChat(void)
 			y += charheight;
 			typelines += 1;
 		}
+		if (cv_chat_showlimit.value)
+			typed_chars += 1;
+	}
+
+	// romoney5: shift the pipe cursor slightly
+	if (cv_chatcursor.value == 2)
+		cursorx--, cursory--;
+	else
+		cursorblink = (cursorblink << 1) % 16;
+
+	// and draw the cursor
+	if (cursorblink < 8)
+		V_DrawChatCharacter(cursorx, cursory+1, cv_chatcursor.string[0]|chatsnap|t, true, NULL);
+
+	if (cv_chat_showlimit.value)
+	{
+		// Limit
+			V_DrawSmallString(chatx, chaty,
+				chatsnap|((HU_MAXMSGLEN - typed_chars) > 64 ? V_TRANSLUCENT : (typed_chars == HU_MAXMSGLEN ? V_REDMAP : V_YELLOWMAP)),
+				va("%d/%d",typed_chars,HU_MAXMSGLEN)
+			);
 	}
 
 	// handle /pm list. It's messy, horrible and I don't care.
@@ -1568,14 +1823,14 @@ static void HU_DrawChat(void)
 			{
 				char name[MAXPLAYERNAME+1];
 				strlcpy(name, player_names[i], 7); // shorten name to 7 characters.
-				V_DrawFillConsoleMap(chatx+ boxw + 2, p_dispy- (6*count), 48, 6, 239 | chatsnap); // fill it like the chat so the text doesn't become hard to read because of the hud.
+				V_DrawFill(chatx+ boxw + 2, p_dispy- (6*count), 48, 6, CHATOPACITY|cv_menubgcolor.value|chatsnap); // fill it like the chat so the text doesn't become hard to read because of the hud.
 				V_DrawSmallString(chatx+ boxw + 4, p_dispy- (6*count), chatsnap|V_ALLOWLOWERCASE, va("\x82%d\x80 - %s", i, name));
 				count++;
 			}
 		}
 		if (count == 0) // no results.
 		{
-			V_DrawFillConsoleMap(chatx+boxw+2, p_dispy- (6*count), 48, 6, 239 | chatsnap); // fill it like the chat so the text doesn't become hard to read because of the hud.
+			V_DrawFill(chatx+boxw+2, p_dispy- (6*count), 48, 6, CHATOPACITY|cv_menubgcolor.value|chatsnap); // fill it like the chat so the text doesn't become hard to read because of the hud.
 			V_DrawSmallString(chatx+boxw+4, p_dispy- (6*count), chatsnap|V_ALLOWLOWERCASE, "NO RESULT.");
 		}
 	}
@@ -1588,11 +1843,13 @@ static void HU_DrawChat(void)
 
 static void HU_DrawChat_Old(void)
 {
-	INT32 t = 0, c = 0, y = HU_INPUTY;
+	INT32 t = 0, c = 0, y = HU_INPUTY, charcount = 0;
 	size_t i = 0;
 	const char *ntalk = "Say: ", *ttalk = "Say-Team: ";
 	const char *talk = ntalk;
 	INT32 charwidth = 8 * con_scalefactor, charheight = 8 * con_scalefactor;
+	INT32 cursorx, cursory;
+	UINT16 cursorblink = hu_tick;
 	if (teamtalk)
 		talk = ttalk;
 
@@ -1603,26 +1860,60 @@ static void HU_DrawChat_Old(void)
 		c += charwidth;
 	}
 
-	if ((strlen(w_chat) == 0 || c_input == 0) && hu_tick < 4)
-		V_DrawCharacter(HU_INPUTX+c, y+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, true);
+	cursorx = HU_INPUTX + c;
+	cursory = y;
 
 	for (i = 0; w_chat[i]; i++)
 	{
-		if (c_input == (i+1) && hu_tick < 4)
+		if (c_input == (i+1))
 		{
-			INT32 cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
-			INT32 cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
-			V_DrawCharacter(cursorx, cursory+2*con_scalefactor, '_' |cv_constextsize.value | V_NOSCALESTART|t, true);
+			cursorx = (HU_INPUTX+c+charwidth < vid.width) ? (HU_INPUTX + c + charwidth) : (HU_INPUTX); // we may have to go down.
+			cursory = (cursorx != HU_INPUTX) ? (y) : (y+charheight);
 		}
 
 		if (w_chat[i] >= FONTSTART)
+		{
+			if ((c_selection > i && c_input <= i) || (c_selection <= i && c_input > i))
+				V_DrawFill(HU_INPUTX+c-2, y+1, charwidth, charheight, V_VMAPToPaletteIndex(cv_menucolor.value)|chatsnap|V_NOSCALESTART|t);
+
 			V_DrawCharacter(HU_INPUTX + c, y, w_chat[i] | cv_constextsize.value | V_NOSCALESTART | t, true);
 
+			if (cv_chat_showlimit.value)
+				charcount++;
+		}
+
 		c += charwidth;
-		if (c >= vid.width)
+		if (c >= vid.width) // text wrapping
 		{
 			c = 0;
 			y += charheight;
+		}
+	}
+
+	// romoney5: shift the pipe cursor slightly
+	if (cv_chatcursor.value == 2)
+		cursorx--, cursory--;
+	else
+		cursorblink = (cursorblink << 1) % 16;
+
+	// and draw the cursor
+	if (cursorblink < 8)
+		V_DrawCharacter(cursorx, cursory+2*con_scalefactor, cv_chatcursor.string[0]|cv_constextsize.value|V_NOSCALESTART|t, true);
+
+	// console chat users are FINALLY being fed!
+	if (cv_chat_showlimit.value)
+	{
+		const char *lim = va(" (%i/%i)", charcount, HU_MAXMSGLEN);
+		for (i = 0; lim[i]; i++)
+		{
+			V_DrawCharacter(HU_INPUTX + c, y, lim[i] | cv_constextsize.value | V_NOSCALESTART | t, true);
+
+			c += charwidth;
+			if (c >= vid.width) // text wrapping
+			{
+				c = 0;
+				y += charheight;
+			}
 		}
 	}
 }
@@ -1856,7 +2147,7 @@ void HU_Drawer(void)
 //
 // HU_drawPing
 //
-void HU_drawPing(INT32 x, INT32 y, UINT32 ping, boolean notext, INT32 flags)
+void HU_drawPing(INT32 x, INT32 y, UINT32 ping, boolean notext, INT32 flags, INT32 pnum)
 {
 	UINT8 numbars = 0; // how many ping bars do we draw?
 	UINT8 barcolor = 31; // color we use for the bars (green, yellow, red or black)
@@ -1864,6 +2155,10 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, boolean notext, INT32 flags)
 	SINT8 yoffset = 6;
 	INT32 dx = x+1 - (V_SmallStringWidth(va("%dms", ping),
 				V_ALLOWLOWERCASE|flags)/2);
+
+	const boolean gentleman = (cv_mindelay.value && (ping < (UINT32)G_TicsToMilliseconds((tic_t)simulated_lag))) && (pnum == consoleplayer || pnum == secondarydisplayplayer);
+	if (gentleman)
+		ping = G_TicsToMilliseconds((tic_t)simulated_lag);
 
 	if (ping < 128)
 	{
@@ -1880,6 +2175,8 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, boolean notext, INT32 flags)
 		numbars = 1;
 		barcolor = 35;
 	}
+	if (gentleman)
+		barcolor = 194;
 
 	if (ping < UINT32_MAX && (!notext || vid.width >= 640)) // how sad, we're using a shit resolution.
 		V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", ping));
@@ -1922,7 +2219,7 @@ void HU_DrawTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scorelines, I
 		if (!splitscreen) // don't draw it on splitscreen,
 		{
 			if (tab[i].num != serverplayer)
-				HU_drawPing(x + 253, y, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], false, 0);
+				HU_drawPing(x + 253, y, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], false, 0, tab[i].num);
 			//else
 			//	V_DrawSmallString(x+ 246, y+4, MENUCOLOR, "SERVER");
 		}
@@ -2123,7 +2420,7 @@ static void HU_Draw32TeamTabRankings(playersort_t *tab, INT32 whiteplayer)
 		if (!splitscreen)
 		{
 			if (tab[i].num != serverplayer)
-				HU_drawPing(x + 135, y+1, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], true, 0);
+				HU_drawPing(x + 135, y+1, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], true, 0, tab[i].num);
 			//else
 				//V_DrawSmallString(x+ 129, y+4, MENUCOLOR, "HOST");
 		}
@@ -2248,7 +2545,7 @@ void HU_DrawTeamTabRankings(playersort_t *tab, INT32 whiteplayer)
 		if (!splitscreen)
 		{
 			if (tab[i].num != serverplayer)
-				HU_drawPing(x+ 113, y, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], false, 0);
+				HU_drawPing(x+ 113, y, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], false, 0, tab[i].num);
 			//else
 			//	V_DrawSmallString(x+ 94, y+4, MENUCOLOR, "SERVER");
 		}
@@ -2279,7 +2576,7 @@ void HU_DrawDualTabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scoreline
 
 		strlcpy(name, tab[i].name, 12);
 		if (tab[i].num != serverplayer)
-			HU_drawPing(x+ 113, y, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], false, 0);
+			HU_drawPing(x+ 113, y, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], false, 0, tab[i].num);
 		//else
 		//	V_DrawSmallString(x+ 94, y+4, MENUCOLOR, "SERVER");
 
@@ -2388,7 +2685,7 @@ static void HU_Draw32TabRankings(INT32 x, INT32 y, playersort_t *tab, INT32 scor
 		if (!splitscreen) // don't draw it on splitscreen,
 		{
 			if (tab[i].num != serverplayer)
-				HU_drawPing(x+ 135, y+1, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], true, 0);
+				HU_drawPing(x+ 135, y+1, players[tab[i].num].quittime ? UINT32_MAX : playerpingtable[tab[i].num], true, 0, tab[i].num);
 			//else
 			//	V_DrawSmallString(x+ 129, y+4, MENUCOLOR, "HOST");
 		}

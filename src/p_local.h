@@ -110,10 +110,10 @@ typedef struct camera_s
 
 extern camera_t camera, camera2;
 extern consvar_t cv_cam_dist, cv_cam_still, cv_cam_height;
-extern consvar_t cv_cam_speed, cv_cam_rotate, cv_cam_rotspeed, cv_cam_turnmultiplier, cv_cam_orbit, cv_cam_adjust;
+extern consvar_t cv_cam_speed, cv_cam_rotate, cv_cam_rotspeed, cv_cam_turnmultiplier, cv_cam_gamepadxsensitivity, cv_cam_gamepadysensitivity, cv_cam_orbit, cv_cam_adjust;
 
 extern consvar_t cv_cam2_dist, cv_cam2_still, cv_cam2_height;
-extern consvar_t cv_cam2_speed, cv_cam2_rotate, cv_cam2_rotspeed, cv_cam2_turnmultiplier, cv_cam2_orbit, cv_cam2_adjust;
+extern consvar_t cv_cam2_speed, cv_cam2_rotate, cv_cam2_rotspeed, cv_cam2_turnmultiplier, cv_cam2_gamepadxsensitivity, cv_cam2_gamepadysensitivity, cv_cam2_orbit, cv_cam2_adjust;
 
 extern consvar_t cv_cam_clipping, cv_cam2_clipping;
 extern consvar_t cv_cam_exact, cv_cam2_exact;

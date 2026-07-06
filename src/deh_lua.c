@@ -61,6 +61,8 @@ static inline int lib_freeslot(lua_State *L)
 				r++;
 			} else
 				CONS_Alert(CONS_WARNING, "Ran out of free SFX slots!\n");
+
+			freeslots_sfx++;
 		}
 		else if (fastcmp(type, "SPR"))
 		{
@@ -85,6 +87,8 @@ static inline int lib_freeslot(lua_State *L)
 			}
 			if (j > SPR_LASTFREESLOT)
 				CONS_Alert(CONS_WARNING, "Ran out of free sprite slots!\n");
+
+			freeslots_spr++;
 		}
 		else if (fastcmp(type, "S"))
 		{
@@ -100,6 +104,8 @@ static inline int lib_freeslot(lua_State *L)
 				}
 			if (i == NUMSTATEFREESLOTS)
 				CONS_Alert(CONS_WARNING, "Ran out of free State slots!\n");
+
+			freeslots_s++;
 		}
 		else if (fastcmp(type, "MT"))
 		{
@@ -115,6 +121,8 @@ static inline int lib_freeslot(lua_State *L)
 				}
 			if (i == NUMMOBJFREESLOTS)
 				CONS_Alert(CONS_WARNING, "Ran out of free MobjType slots!\n");
+
+			freeslots_mt++;
 		}
 		else if (fastcmp(type, "SKINCOLOR"))
 		{
@@ -131,6 +139,8 @@ static inline int lib_freeslot(lua_State *L)
 				}
 			if (i == NUMCOLORFREESLOTS)
 				CONS_Alert(CONS_WARNING, "Ran out of free skincolor slots!\n");
+
+			freeslots_skincolor++;
 		}
 		else if (fastcmp(type, "SPR2"))
 		{
@@ -152,6 +162,8 @@ static inline int lib_freeslot(lua_State *L)
 				} else
 					CONS_Alert(CONS_WARNING, "Ran out of free SPR2 slots!\n");
 			}
+
+			freeslots_spr2++;
 		}
 		else if (fastcmp(type, "TOL"))
 		{
@@ -173,6 +185,8 @@ static inline int lib_freeslot(lua_State *L)
 					r++;
 				}
 			}
+
+			freeslots_tol++;
 		}
 		Z_Free(s);
 		lua_remove(L, 1);

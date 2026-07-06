@@ -548,7 +548,7 @@ static int lib_cvRegisterVar(lua_State *L)
 		return luaL_error(L, M_GetText("Variable %s has CV_CALL without any callbacks"), cvar->name);
 	}
 
-	cvar->flags |= CV_ALLOWLUA;
+	cvar->flags |= CV_ALLOWLUA|CV_LUAVAR;
 	// actually time to register it to the console now! Finally!
 	cvar->flags |= CV_MODIFIED;
 	CV_RegisterVar(cvar);

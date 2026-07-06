@@ -75,6 +75,7 @@ extern tic_t servermaxping;
 
 extern consvar_t cv_netticbuffer, cv_resynchattempts, cv_blamecfail, cv_playbackspeed, cv_idletime, cv_idleaction, cv_dedicatedidletime;
 extern consvar_t cv_httpsource;
+extern consvar_t cv_mindelay, cv_gentlemens; // this should be in tic_command.h but whatever :p
 
 // Used in d_net, the only dependence
 void D_ClientServerInit(void);
@@ -120,6 +121,11 @@ SINT8 nametonum(const char *name);
 
 extern char motd[254], server_context[8];
 extern UINT8 playernode[MAXPLAYERS];
+
+extern plrinfo_pak playerinfo[MAXPLAYERS];
+extern SINT8 joinnode;
+
+extern INT32 viewfiles;
 
 INT32 D_NumPlayers(void);
 INT32 D_NumNodes(boolean skiphost);

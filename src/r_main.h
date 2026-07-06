@@ -130,6 +130,8 @@ extern consvar_t cv_renderwalls, cv_renderfloors, cv_renderthings;
 extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_secbright;
 
+extern consvar_t cv_flashes;
+
 extern consvar_t cv_affinerotation;
 extern consvar_t cv_fakerollangle;
 extern consvar_t cv_affineprescale, cv_affinemosaic;

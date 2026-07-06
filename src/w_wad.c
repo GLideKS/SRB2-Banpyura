@@ -1332,6 +1332,16 @@ W_CheckNumForMarkerStartPwad (const char *name, UINT16 wad, UINT16 startlump)
 	return marker;
 }
 
+static INT32 W_CheckFolderKeys(void* key1, void* key2)
+{
+	return strcmp((char *)key1, (char *)key2);
+}
+
+static void W_DeallocFolderKey(void* key)
+{
+	Z_Free(key);
+}
+
 // Look for the first lump from a folder.
 UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlump)
 {
@@ -1339,12 +1349,11 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
 
-	void *val = M_AATreeGet(wadfiles[wad]->startfolders, hash);
+	void *val = M_AATreeGet(wadfiles[wad]->startfolders, Z_StrDup(name), W_CheckFolderKeys, W_DeallocFolderKey);
 	if (val != NULL)
 		return (uintptr_t)val;
-	
+
 	for (i = startlump; i < wadfiles[wad]->numlumps; i++, lump_p++)
 	{
 		if (strnicmp(name, lump_p->fullname, name_length) == 0)
@@ -1352,10 +1361,11 @@ UINT16 W_CheckNumForFolderStartPK3(const char *name, UINT16 wad, UINT16 startlum
 			/* SLADE is special and puts a single directory entry. Skip that. */
 			if (strlen(lump_p->fullname) == name_length)
 				i++;
+			M_AATreeSet(wadfiles[wad]->startfolders, Z_StrDup(name), (void *)(uintptr_t)i, W_CheckFolderKeys, W_DeallocFolderKey);
 			return i;
 		}
 	}
-	M_AATreeSet(wadfiles[wad]->startfolders, hash, (void *)INT16_MAX);
+	M_AATreeSet(wadfiles[wad]->startfolders, Z_StrDup(name), (void *)INT16_MAX, W_CheckFolderKeys, W_DeallocFolderKey);
 	return INT16_MAX;
 }
 
@@ -1367,9 +1377,8 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 	INT32 i;
 	lumpinfo_t *lump_p = wadfiles[wad]->lumpinfo + startlump;
 	size_t name_length = strlen(name);
-	UINT32 hash = quickncasehash(name, name_length);
-
-	void *val = M_AATreeGet(wadfiles[wad]->endfolders, hash);
+	
+	void *val = M_AATreeGet(wadfiles[wad]->endfolders, Z_StrDup(name), W_CheckFolderKeys, W_DeallocFolderKey);
 	if (val != NULL)
 		return (uintptr_t)val;
 	
@@ -1378,7 +1387,7 @@ UINT16 W_CheckNumForFolderEndPK3(const char *name, UINT16 wad, UINT16 startlump)
 		if (strnicmp(name, lump_p->fullname, name_length))
 			break;
 	}
-	M_AATreeSet(wadfiles[wad]->endfolders, hash, (void *)(uintptr_t)i);
+	M_AATreeSet(wadfiles[wad]->endfolders, Z_StrDup(name), (void *)(uintptr_t)i, W_CheckFolderKeys, W_DeallocFolderKey);
 	return i;
 }
 

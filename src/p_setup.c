@@ -7889,7 +7889,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	if (mapheaderinfo[gamemap-1]->forcecharacter[0] != '\0')
 		P_ForceCharacter(mapheaderinfo[gamemap-1]->forcecharacter);
 
-	if (!dedicated)
+	if (!dedicated && !reloadinggamestate)
 	{
 		// chasecam on in first-person gametypes and 2D
 		boolean chase = (!(gametyperules & GTR_FIRSTPERSON)) || (maptol & TOL_2D);
@@ -7931,7 +7931,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 		}
 		G_ClearModeAttackRetryFlag();
 	}
-	else if (rendermode != render_none && G_IsSpecialStage(gamemap))
+	else if (rendermode != render_none && G_IsSpecialStage(gamemap) && !reloadinggamestate)
 	{
 		P_RunSpecialStageWipe();
 		ranspecialwipe = 1;

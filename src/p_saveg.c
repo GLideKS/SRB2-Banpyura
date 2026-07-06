@@ -16,8 +16,10 @@
 #include "d_main.h"
 #include "doomstat.h"
 #include "g_game.h"
+#include "m_menu.h"
 #include "m_random.h"
 #include "m_misc.h"
+#include "netcode/client_connection.h"
 #include "p_local.h"
 #include "p_setup.h"
 #include "p_saveg.h"
@@ -36,6 +38,7 @@
 #include "lua_script.h"
 #include "p_slopes.h"
 #include "hu_stuff.h"
+#include <locale.h>
 
 savedata_t savedata;
 
@@ -278,6 +281,38 @@ void P_ReadMem(save_t *p, void *s, size_t n)
 	memcpy(s, &p->buf[p->pos], n);
 	p->pos += n;
 }
+
+static extracolormap_t *net_colormaps = NULL;
+static UINT32 num_net_colormaps = 0;
+static UINT32 num_ffloors = 0; // for loading
+
+// romoney5: for more common savegame errors, just return to the title screen
+// and print a helpful message
+static boolean save_errored = false;
+
+static void SaveError(const char *str, ...)
+{
+	va_list argptr;
+	char buffer[512];
+
+	va_start(argptr, str);
+	vsprintf(buffer, str, argptr);
+	va_end(argptr);
+
+	save_errored = true;
+
+	// Don't need these anymore
+	num_net_colormaps = 0;
+	num_ffloors = 0;
+	net_colormaps = NULL;
+	
+	Command_ExitGame_f();
+	CONS_Printf("%s\n", buffer);
+	M_StartMessage(va("%s\n\nPress ESC\n", buffer), NULL, MM_NOTHING);
+	cl_mode = CL_ABORTED;
+}
+
+#define CHECKSAVEERR() if (save_errored) {save_errored = false; return false;}
 
 // Block UINT32s to attempt to ensure that the correct data is
 // being sent and received
@@ -814,10 +849,6 @@ static void P_NetUnArchivePlayers(save_t *save_p)
 ///
 /// Colormaps
 ///
-
-static extracolormap_t *net_colormaps = NULL;
-static UINT32 num_net_colormaps = 0;
-static UINT32 num_ffloors = 0; // for loading
 
 // Copypasta from r_data.c AddColormapToList
 // But also check for equality and return the matching index
@@ -1475,7 +1506,12 @@ static void UnArchiveSectors(save_t *save_p)
 			break;
 
 		if (i > numsectors)
-			I_Error("Invalid sector number %u from server (expected end at %s)", i, sizeu1(numsectors));
+		{
+			// SaveError("Invalid sector number %u from server (expected end at %s)", i, sizeu1(numsectors));
+			CONS_Alert(CONS_ERROR, "Invalid sector number %u from server (expected end at %s)\n", i, sizeu1(numsectors));
+			SaveError("Invalid sector number in savegame.\nCheck the console for details.", i);
+			return;
+		}
 
 		diff = P_ReadUINT8(save_p);
 		if (diff & SD_DIFF2)
@@ -1882,8 +1918,14 @@ static void UnArchiveLines(save_t *save_p)
 
 		if (i == 0xffffffff)
 			break;
+
 		if (i > numlines)
-			I_Error("Invalid line number %u from server", i);
+		{
+			// SaveError("Invalid line number %u from server", i);
+			CONS_Alert(CONS_ERROR, "Invalid line number %u from server\n", i);
+			SaveError("Invalid line number in savegame.\nCheck the console for details.", i);
+			return;
+		}
 
 		diff = P_ReadUINT8(save_p);
 		if (diff & LD_DIFF2)
@@ -3331,7 +3373,11 @@ static thinker_t* LoadMobjThinker(save_t *save_p, actionf_p1 thinker)
 				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type %d\n", mobj->spawnpoint->type);
 			else
 				CONS_Alert(CONS_ERROR, "Found mobj with unknown map thing type NULL\n");
-			I_Error("Savegame corrupted");
+
+			// SaveError("Savegame corrupted");
+			SaveError("Found a mobj with an unknown thing type.\nCheck the console for details.");
+
+			return NULL;
 		}
 		mobj->type = i;
 	}
@@ -4396,10 +4442,12 @@ static void P_NetUnArchiveThinkers(save_t *save_p)
 					break;
 
 				default:
-					I_Error("P_UnarchiveSpecials: Unknown tclass %d in savegame", tclass);
+					I_Error("P_NetUnArchiveThinkers: Unknown tclass %d in savegame", tclass);
 			}
 			if (th)
 				P_AddThinker(i, th);
+			else
+				return;
 		}
 
 		CONS_Debug(DBG_NETPLAY, "%u thinkers loaded in list %d\n", numloaded, i);
@@ -4512,7 +4560,11 @@ FUNCINLINE static ATTRINLINE void P_UnArchivePolyObjects(save_t *save_p)
 	numSavedPolys = P_ReadINT32(save_p);
 
 	if (numSavedPolys != numPolyObjects)
-		I_Error("P_UnArchivePolyObjects: polyobj count inconsistency\n");
+	{
+		// I_Error("P_UnArchivePolyObjects: polyobj count inconsistency\n");
+		CONS_Alert(CONS_ERROR, "P_UnArchivePolyObjects: polyobj count inconsistency (expected %d, got %d)\n", numPolyObjects, numSavedPolys);
+		SaveError("Invalid PolyObject count in savegame.\nCheck the console for details.");
+	}
 
 	for (i = 0; i < numSavedPolys; ++i)
 		P_UnArchivePolyObj(save_p, &PolyObjects[i]);
@@ -5429,8 +5481,11 @@ boolean P_LoadNetGame(save_t *save_p, boolean reloading)
 	if (gamestate == GS_LEVEL)
 	{
 		P_NetUnArchiveWorld(save_p);
+		CHECKSAVEERR()
 		P_UnArchivePolyObjects(save_p);
+		CHECKSAVEERR()
 		P_NetUnArchiveThinkers(save_p);
+		CHECKSAVEERR()
 		P_NetUnArchiveSpecials(save_p);
 		P_NetUnArchiveColormaps(save_p);
 		P_NetUnArchiveWaypoints(save_p);

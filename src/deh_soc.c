@@ -444,7 +444,11 @@ void readfreeslots(MYFILE *f)
 			// TODO: Out-of-slots warnings/errors.
 			// TODO: Name too long (truncated) warnings.
 			if (fastcmp(type, "SFX"))
+			{
 				S_AddSoundFx(word, false, 0, false);
+
+				freeslots_sfx++;
+			}
 			else if (fastcmp(type, "SPR"))
 			{
 				if (strlen(word) > MAXSPRITENAME)
@@ -461,6 +465,8 @@ void readfreeslots(MYFILE *f)
 					LUA_UpdateSprName(word, i);
 					break;
 				}
+
+				freeslots_spr++;
 			}
 			else if (fastcmp(type, "S"))
 			{
@@ -470,6 +476,8 @@ void readfreeslots(MYFILE *f)
 						strcpy(FREE_STATES[i],word);
 						break;
 					}
+
+				freeslots_s++;
 			}
 			else if (fastcmp(type, "MT"))
 			{
@@ -479,6 +487,8 @@ void readfreeslots(MYFILE *f)
 						strcpy(FREE_MOBJS[i],word);
 						break;
 					}
+
+				freeslots_mt++;
 			}
 			else if (fastcmp(type, "SKINCOLOR"))
 			{
@@ -489,6 +499,8 @@ void readfreeslots(MYFILE *f)
 						M_AddMenuColor(numskincolors++);
 						break;
 					}
+
+				freeslots_skincolor++;
 			}
 			else if (fastcmp(type, "SPR2"))
 			{
@@ -506,6 +518,8 @@ void readfreeslots(MYFILE *f)
 					spr2names[free_spr2++][4] = 0;
 				} else
 					deh_warning("Ran out of free SPR2 slots!\n");
+
+				freeslots_spr2++;
 			}
 			else if (fastcmp(type, "TOL"))
 			{
@@ -526,6 +540,8 @@ void readfreeslots(MYFILE *f)
 					G_AddTOL(lastcustomtol, word);
 					lastcustomtol <<= 1;
 				}
+
+				freeslots_tol++;
 			}
 			else
 				deh_warning("Freeslots: unknown enum class '%s' for '%s_%s'", type, type, word);
@@ -1558,6 +1574,8 @@ void readlevelheader(MYFILE *f, INT32 num)
 			// Strings that can be truncated
 			else if (fastcmp(word, "SELECTHEADING"))
 			{
+				// romoney5: word2 should be lowercase here for menucaps, but it could break
+				// lua scripts that rely on the uppercase names (they can access selectheading)
 				deh_strlcpy(mapheaderinfo[num-1]->selectheading, word2,
 					sizeof(mapheaderinfo[num-1]->selectheading), va("Level header %d: selectheading", num));
 			}

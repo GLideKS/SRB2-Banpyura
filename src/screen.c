@@ -485,7 +485,7 @@ void SCR_DisplayLocalPing(void)
 	if (cv_showping.value == 1 || (cv_showping.value == 2 && servermaxping && ping > servermaxping))	// only show 2 (warning) if our ping is at a bad level
 	{
 		INT32 dispy = cv_ticrate.value ? 180 : 189;
-		HU_drawPing(307, dispy, ping, true, V_SNAPTORIGHT | V_SNAPTOBOTTOM);
+		HU_drawPing(307, dispy, ping, true, V_SNAPTORIGHT | V_SNAPTOBOTTOM, consoleplayer);
 	}
 }
 
