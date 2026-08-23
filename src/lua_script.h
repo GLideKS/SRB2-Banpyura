@@ -175,4 +175,5 @@ void COM_Lua_f(void);
 #define INLEVEL if (! ISINLEVEL)\
 return luaL_error(L, "This can only be used in a level!");
 
+int LUA_HTTPLib(lua_State *L);
 #endif/*LUA_SCRIPT_H*/

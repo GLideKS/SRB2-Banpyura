@@ -565,6 +565,9 @@
     <ClInclude Include="..\lua_banpyura.h">
       <Filter>LUA</Filter>
     </ClInclude>
+    <ClInclude Include="..\lua_httplib.h">
+      <Filter>LUA</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\tmap.nas">
@@ -1123,6 +1126,9 @@
       <Filter>SDLApp</Filter>
     </ClCompile>
     <ClCompile Include="..\lua_banpyura.c">
+      <Filter>LUA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lua_httplib.c">
       <Filter>LUA</Filter>
     </ClCompile>
   </ItemGroup>

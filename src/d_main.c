@@ -97,6 +97,7 @@
 #endif
 
 #include "lua_script.h"
+#include "lua_httplib.h"
 
 // Version numbers for netplay :upside_down_face:
 int    VERSION;
@@ -938,6 +939,7 @@ static void D_RunFrame(void)
 #endif
 
 		LUA_Step();
+		LUA_HTTPProcessCallbacks();
 
 		// Fully completed frame made.
 		finishprecise = I_GetPreciseTime();

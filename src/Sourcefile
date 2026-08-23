@@ -99,3 +99,4 @@ lua_hudlib_drawlist.c
 lua_inputlib.c
 lua_colorlib.c
 lua_banpyura.c
+lua_httplib.c

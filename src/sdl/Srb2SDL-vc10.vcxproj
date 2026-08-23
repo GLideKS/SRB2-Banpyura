@@ -320,6 +320,7 @@
     <ClInclude Include="..\hardware\hw_md3load.h" />
     <ClInclude Include="..\hardware\hw_model.h" />
     <ClInclude Include="..\lua_banpyura.h" />
+    <ClInclude Include="..\lua_httplib.h" />
     <ClInclude Include="..\u_list.h" />
     <ClInclude Include="..\hu_stuff.h" />
     <ClInclude Include="..\info.h" />
@@ -502,6 +503,7 @@
     <ClCompile Include="..\hardware\r_opengl\r_opengl.c" />
     <ClCompile Include="..\lua_banpyura.c" />
     <ClCompile Include="..\lua_colorlib.c" />
+    <ClCompile Include="..\lua_httplib.c" />
     <ClCompile Include="..\r_bbox.c" />
     <ClCompile Include="..\u_list.c" />
     <ClCompile Include="..\hu_stuff.c" />
