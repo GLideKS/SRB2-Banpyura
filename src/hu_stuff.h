@@ -72,6 +72,8 @@ typedef struct
 #endif
 #define CHAT_MUTE ((cv_mute.value || players[consoleplayer].muted) && !(server || IsPlayerAdmin(consoleplayer)))	// this still allows to open the chat but not to type. That's used for scrolling and whatnot.
 #define OLD_MUTE (OLDCHAT && (cv_mute.value || players[consoleplayer].muted) && !(server || IsPlayerAdmin(consoleplayer)))	// this is used to prevent oldchat from opening when muted.
+#define SERVER_MUTE (cv_mute.value || players[consoleplayer].muted)
+#define CHAT_SPAMMER (spam_tokens[consoleplayer] <= 0 && cv_chatspamprotection.value)
 
 // If a dedicated server uses the say command and sends a msg over a certain amount, it causes a crash.
 // As a fix: This amount will be compared to the message length before writing a NetXCmd packet.

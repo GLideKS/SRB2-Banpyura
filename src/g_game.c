@@ -313,6 +313,8 @@ consvar_t cv_chatspamburst= CVAR_INIT ("chatspamburst", "3", CV_SAVE|CV_NETVAR, 
 // minichat text background
 consvar_t cv_chatbacktint = CVAR_INIT ("chatbacktint", "On", CV_SAVE, CV_OnOff, NULL);
 
+consvar_t cv_chatlogbacktint = CVAR_INIT ("chatlogbacktint", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+
 // old shit console chat. (mostly exists for stuff like terminal, not because I cared if anyone liked the old chat.)
 static CV_PossibleValue_t consolechat_cons_t[] = {{0, "Window"}, {1, "Console"}, {2, "Window (Hidden)"}, {0, NULL}};
 consvar_t cv_consolechat = CVAR_INIT ("chatmode", "Window", CV_SAVE, consolechat_cons_t, NULL);

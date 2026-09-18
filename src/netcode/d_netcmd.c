@@ -833,6 +833,7 @@ void D_RegisterClientCommands(void)
 	CV_RegisterVar(&cv_chat_clearonexit);
 	CV_RegisterVar(&cv_chatcursor);
 	CV_RegisterVar(&cv_chatopacity);
+	CV_RegisterVar(&cv_chatlogbacktint);
 	CV_RegisterVar(&cv_crosshair);
 	CV_RegisterVar(&cv_crosshair2);
 	CV_RegisterVar(&cv_crosshair_invert);
