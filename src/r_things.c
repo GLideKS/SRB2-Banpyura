@@ -2700,7 +2700,7 @@ static void R_ProjectPrecipitationSprite(precipmobj_t *thing)
 
 weatherthink:
 	// okay... this is a hack, but weather isn't networked, so it should be ok
-	if (!(paused || P_AutoPause()) && thing->lastupdatetime < gametic)
+	if (!(paused || P_AutoPause() || objectplacing) && thing->lastupdatetime < gametic)
 	{
 		if (thing->precipflags & PCF_RAIN)
 			P_RainThinker(thing);
@@ -3712,7 +3712,7 @@ boolean R_ThingVisible (mobj_t *thing)
 {
 	return (!(
 		(thing->sprite == SPR_NULL) || // Don't draw null-sprites
-		(thing->flags2 & MF2_DONTDRAW) || // Don't draw MF2_LINKDRAW objects
+		(thing->flags2 & MF2_DONTDRAW) || // Don't draw MF2_DONTDRAW objects
 		(thing->drawonlyforplayer && thing->drawonlyforplayer != viewplayer) || // Don't draw other players' personal objects
 		(!R_BlendLevelVisible(thing->blendmode, R_GetThingTransTable(thing->alpha, 0))) ||
 		(!P_MobjWasRemoved(r_viewmobj) && (

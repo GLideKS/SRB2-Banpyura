@@ -3077,7 +3077,7 @@ static void M_HandleMenuPresState(menu_t *newMenu)
 	}
 
 	// Change the music
-	M_ChangeMenuMusic("_title", false);
+	M_ChangeMenuMusic("_title", looptitle);
 
 	// Run the linedef execs
 	if (titlemapinaction)
@@ -7334,8 +7334,8 @@ static void M_HandleChecklist(INT32 choice)
 				{
 					if (!unlockables[j].name[0])
 						continue;
-					// if (unlockables[j].nochecklist)
-					//	continue;
+					 if (unlockables[j].hidden)
+						continue;
 					if (!unlockables[j].conditionset)
 						continue;
 					if (unlockables[j].conditionset > MAXCONDITIONSETS)
@@ -7359,8 +7359,8 @@ static void M_HandleChecklist(INT32 choice)
 				{
 					if (!unlockables[j].name[0])
 						continue;
-					// if (unlockables[j].nochecklist)
-					//	continue;
+					 if (unlockables[j].hidden)
+						continue;
 					if (!unlockables[j].conditionset)
 						continue;
 					if (unlockables[j].conditionset > MAXCONDITIONSETS)
@@ -7413,7 +7413,7 @@ static void M_DrawChecklist(void)
 
 	while (i < MAXUNLOCKABLES)
 	{
-		if (unlockables[i].name[0] == 0 //|| unlockables[i].nochecklist
+		if (unlockables[i].name[0] == 0 || unlockables[i].hidden
 		|| !unlockables[i].conditionset || unlockables[i].conditionset > MAXCONDITIONSETS
 		|| (!data->unlocked[i] && unlockables[i].showconditionset && !M_Achieved(unlockables[i].showconditionset, data)))
 		{
@@ -7425,11 +7425,11 @@ static void M_DrawChecklist(void)
 
 		for (j = i+1; j < MAXUNLOCKABLES; j++)
 		{
-			if (!(unlockables[j].name[0] == 0 //|| unlockables[j].nochecklist
+			if (!(unlockables[j].name[0] == 0 || unlockables[j].hidden
 			|| !unlockables[j].conditionset || unlockables[j].conditionset > MAXCONDITIONSETS))
 				break;
 		}
-		if ((j != MAXUNLOCKABLES) && (unlockables[i].conditionset == unlockables[j].conditionset))
+		if ((j != MAXUNLOCKABLES) && (unlockables[i].conditionset == unlockables[j].conditionset) && !unlockables[j].hidden)
 			addy(8)
 		else
 		{
@@ -10978,7 +10978,7 @@ static void M_ModeAttackEndGame(INT32 choice)
 	M_UpdateItemOn();
 	G_SetGamestate(GS_TIMEATTACK);
 	modeattacking = ATTACKING_NONE;
-	M_ChangeMenuMusic("_title", true);
+	M_ChangeMenuMusic("_title", looptitle);
 	Nextmap_OnChange();
 }
 

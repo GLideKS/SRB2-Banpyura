@@ -65,6 +65,7 @@ line_t *ceilingline;
 
 // set by PIT_CheckLine() for any line that stopped the PIT_CheckLine()
 // that is, for any line which is 'solid'
+static fixed_t blockingfrac;
 line_t *blockingline;
 
 msecnode_t *sector_list = NULL;
@@ -1987,6 +1988,7 @@ static boolean PIT_CheckLine(line_t *ld)
 	// so two special lines that are only 8 pixels apart
 	// could be crossed in either order.
 
+	// TODO: Remove this line; blockingline gets set elsewhere now
 	// this line is out of the if so upper and lower textures can be hit by a splat
 	blockingline = ld;
 
@@ -2044,11 +2046,31 @@ static boolean PIT_CheckLine(line_t *ld)
 	return true;
 }
 
+static boolean PTR_BlockTraverse(intercept_t *in)
+{
+	line_t *li;
+
+	I_Assert(in->isaline);
+
+	li = in->d.line;
+
+	if (!P_LineIsBlocking(tmthing, li))
+		return true;
+
+	if (in->frac < blockingfrac)
+	{
+		blockingfrac = in->frac;
+		blockingline = li;
+	}
+	return false;
+}
+
 // =========================================================================
 //                         MOVEMENT CLIPPING
 // =========================================================================
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 {
+	fixed_t leadx, leady, trailx, traily;
 	INT32 xl, xh, yl, yh, bx, by;
 	subsector_t *newsubsec;
 	boolean blockval = true;
@@ -2304,6 +2326,35 @@ boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y)
 		for (by = yl; by <= yh; by++)
 			if (!P_BlockLinesIterator(bx, by, PIT_CheckLine))
 				blockval = false;
+
+	// trace along the three leading corners
+	if (tmthing->momx > 0)
+	{
+		leadx = tmthing->x + tmthing->radius;
+		trailx = tmthing->x - tmthing->radius;
+	}
+	else
+	{
+		leadx = tmthing->x - tmthing->radius;
+		trailx = tmthing->x + tmthing->radius;
+	}
+
+	if (tmthing->momy > 0)
+	{
+		leady = tmthing->y + tmthing->radius;
+		traily = tmthing->y - tmthing->radius;
+	}
+	else
+	{
+		leady = tmthing->y - tmthing->radius;
+		traily = tmthing->y + tmthing->radius;
+	}
+
+	blockingfrac = FRACUNIT+1;
+
+	P_PathTraverse(leadx, leady, leadx + tmthing->momx, leady + tmthing->momy, PT_ADDLINES, PTR_BlockTraverse);
+	P_PathTraverse(trailx, leady, trailx + tmthing->momx, leady + tmthing->momy, PT_ADDLINES, PTR_BlockTraverse);
+	P_PathTraverse(leadx, traily, leadx + tmthing->momx, traily + tmthing->momy, PT_ADDLINES, PTR_BlockTraverse);
 
 	return blockval;
 }
@@ -2762,7 +2813,9 @@ increment_move
 			//All things are affected by their scale.
 			fixed_t maxstep = FixedMul(MAXSTEPMOVE, thing->scale);
 
-			if (thing->player)
+			if (thing->flags & MF_NOSTEPMOVE)
+				maxstep = 0;
+			else if (thing->player)
 			{
 				// If using SSF_DOUBLESTEPUP, double the maxstep.
 				if (P_PlayerTouchingSectorSpecialFlag(thing->player, SSF_DOUBLESTEPUP)
@@ -2790,9 +2843,6 @@ increment_move
 				if (R_PointInSubsector(x, y)->sector->specialflags & SSF_NOSTEPDOWN)
 					maxstep = 0;
 			}
-
-			if (thing->type == MT_SKIM)
-				maxstep = 0;
 
 			if (tmceilingz - tmfloorz < thing->height
 				|| (thing->player
@@ -3009,7 +3059,7 @@ boolean P_SceneryTryMove(mobj_t *thing, fixed_t x, fixed_t y)
 			if (tmceilingz - thing->z < thing->height)
 				return false; // mobj must lower itself to fit
 
-			if (tmfloorz - thing->z > maxstep)
+			if ((thing->flags & MF_NOSTEPMOVE) || tmfloorz - thing->z > maxstep)
 				return false; // too big a step up
 		}
 	} while(tryx != x || tryy != y);
@@ -3446,7 +3496,7 @@ boolean P_LineIsBlocking(mobj_t *mo, line_t *li)
 	if (opentop - mo->z < mo->height)
 		return true; // mobj is too high
 
-	if (openbottom - mo->z > FixedMul(MAXSTEPMOVE, mo->scale))
+	if ((mo->flags & MF_NOSTEPMOVE) || openbottom - mo->z > FixedMul(MAXSTEPMOVE, mo->scale))
 		return true; // too big a step up
 
 	if (mo->player

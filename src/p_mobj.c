@@ -2305,8 +2305,8 @@ boolean P_ZMovement(mobj_t *mo)
 				if (mo->flags & MF_ENEMY || mo->flags & MF_BOSS || mo->type == MT_MINECART)
 				{
 					// Kill enemies, bosses and minecarts that fall into death pits.
-					P_KillMobj(mo, NULL, NULL, 0);
-					return !P_MobjWasRemoved(mo); // allows explosion states to run
+					if (P_DamageMobj(mo, NULL, NULL, 1, DMG_DEATHPIT))
+						return !P_MobjWasRemoved(mo); // allows explosion states to run
 				}
 				else
 				{
@@ -10372,11 +10372,9 @@ void P_MobjThinker(mobj_t *mobj)
 	}
 
 	if (mobj->flags & (MF_ENEMY|MF_BOSS) && mobj->health
-		&& P_CheckDeathPitCollide(mobj)) // extra pit check in case these didn't have momz
-	{
-		P_KillMobj(mobj, NULL, NULL, DMG_DEATHPIT);
-		return;
-	}
+		&& P_CheckDeathPitCollide(mobj) // extra pit check in case these didn't have momz
+		&& P_DamageMobj(mobj, NULL, NULL, 1, DMG_DEATHPIT))
+			return;
 
 	// Crush enemies!
 	if (mobj->ceilingz - mobj->floorz < mobj->height)
@@ -10386,11 +10384,10 @@ void P_MobjThinker(mobj_t *mobj)
 			&& mobj->flags & MF_SHOOTABLE)
 		|| mobj->type == MT_EGGSHIELD)
 		&& !(mobj->flags & MF_NOCLIPHEIGHT)
-		&& mobj->health > 0)
-		{
-			P_KillMobj(mobj, NULL, NULL, DMG_CRUSHED);
+		&& mobj->health > 0
+		&& P_DamageMobj(mobj, NULL, NULL, 1, DMG_CRUSHED))
 			return;
-		}
+
 	}
 
 	// Can end up here if a player dies.
@@ -11423,7 +11420,7 @@ void P_SpawnPrecipitation(void)
 		// Don't set height yet...
 		height = precipsector->sector->ceilingheight;
 
-		if (curWeather == PRECIP_SNOW)
+		if (curWeather == PRECIP_SNOW || curWeather == PRECIP_THUNDERSNOW || curWeather == PRECIP_THUNDERSNOW_NOSTRIKES)
 		{
 			// Not in a sector with visible sky -- exception for NiGHTS.
 			if ((!(maptol & TOL_NIGHTS) && (precipsector->sector->ceilingpic != skyflatnum)) == !(precipsector->sector->flags & MSF_INVERTPRECIP))
@@ -11474,7 +11471,8 @@ void P_PrecipitationEffects(void)
 	// If the global weather has lightning strikes,
 	// EVERYONE gets them at the SAME time!
 	else if (globalweather == PRECIP_STORM
-	 || globalweather == PRECIP_STORM_NORAIN)
+	 || globalweather == PRECIP_STORM_NORAIN
+	 || globalweather == PRECIP_THUNDERSNOW)
 		thunderchance = (P_RandomKey(8192));
 	// But on the other hand, if the global weather is ANYTHING ELSE,
 	// don't sync lightning strikes.
@@ -11496,7 +11494,14 @@ void P_PrecipitationEffects(void)
 			break;
 		case PRECIP_STORM_NORAIN: // no rain, lightning and thunder allowed
 			sounds_rain = false;
+			/* FALLTHRU */
 		case PRECIP_STORM: // everything.
+			break;
+		case PRECIP_THUNDERSNOW_NOSTRIKES: // no lightning strikes specifically
+			effects_lightning = false;
+			/* FALLTHRU */
+		case PRECIP_THUNDERSNOW: // everything.
+			sounds_rain = false;
 			break;
 		default:
 			// Other weathers need not apply.
@@ -11555,7 +11560,7 @@ void P_PrecipitationEffects(void)
 		volume = 255;
 
 	if (sounds_rain && (!leveltime || leveltime % 80 == 1))
-	S_StartSoundFromMobjVol(players[displayplayer].mo, sfx_rainin, volume);
+		S_StartSoundFromMobjVol(players[displayplayer].mo, sfx_rainin, volume);
 
 	if (!sounds_thunder)
 		return;

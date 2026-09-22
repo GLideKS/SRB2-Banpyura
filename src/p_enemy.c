@@ -307,9 +307,9 @@ void P_NewChaseDir(mobj_t *actor)
 	dirtype_t d[3];
 	dirtype_t tdir = DI_NODIR, olddir, turnaround;
 
-	I_Assert(!P_MobjWasRemoved(actor));
-	I_Assert(actor->target != NULL);
-	I_Assert(!P_MobjWasRemoved(actor->target));
+	// only valid mobjs with valid targets may pass this point
+	if (P_MobjWasRemoved(actor) || !actor->target || P_MobjWasRemoved(actor->target))
+		return;
 
 	olddir = actor->movedir;
 
@@ -565,7 +565,7 @@ static boolean P_LookForShield(mobj_t *actor)
 		}
 	}
 
-	//return false;
+	return false;
 }
 
 #ifdef WEIGHTEDRECYCLER
@@ -1953,6 +1953,8 @@ void A_CrushclawLaunch(void *data)
 		}
 		actor->target->angle = R_PointToAngle2(actor->target->x, actor->target->y, crab->target->x, crab->target->y);
 	}
+	else if (actor->target->type != MT_CRUSHCHAIN)
+		return;
 
 	if ((!locvar1) && crab->target)
 	{
@@ -1995,7 +1997,7 @@ void A_CrushclawLaunch(void *data)
 	}
 	else
 	{
-		if (P_MobjWasRemoved(actor))
+		if (P_MobjWasRemoved(actor) || P_MobjWasRemoved(actor->target))
 			return;
 		actor->z = actor->target->z;
 		if ((!locvar1 && (actor->extravalue2 > 256)) || (locvar1 && (actor->extravalue2 < 16)))
@@ -2005,10 +2007,14 @@ void A_CrushclawLaunch(void *data)
 				mobj_t *chain = actor->target, *chainnext;
 				while (chain)
 				{
+					if (P_MobjWasRemoved(chain) || chain->type != MT_CRUSHCHAIN)
+						goto afterchain;
+
 					chainnext = chain->target;
 					P_RemoveMobj(chain);
 					chain = chainnext;
 				}
+afterchain:
 				actor->extravalue2 = 0;
 				actor->angle = R_PointToAngle2(crab->x, crab->y, actor->x, actor->y);
 				P_SetTarget(&actor->target, NULL);
@@ -2032,6 +2038,9 @@ void A_CrushclawLaunch(void *data)
 		fixed_t idx = dx, idy = dy, idz = dz;
 		while (chain)
 		{
+			if (P_MobjWasRemoved(chain) || chain->type != MT_CRUSHCHAIN)
+				return;
+
 			P_MoveOrigin(chain, actor->target->x + idx, actor->target->y + idy, actor->target->z + idz);
 			chain->movefactor = chain->z;
 			idx += dx;
@@ -4656,51 +4665,34 @@ void A_AttractChase(void *data)
 	else
 		actor->flags2 &= ~MF2_DONTDRAW;
 
-	// Turn rings into flingrings if shield is lost or out of range
-	if (actor->tracer && actor->tracer->player
-		&& !(actor->tracer->player->powers[pw_shield] & SH_PROTECTELECTRIC) && actor->info->reactiontime && actor->type != (mobjtype_t)actor->info->reactiontime)
+	// check if player has SH_PROTECTELECTRIC and is within distance
+	if (P_LookForShield(actor))
 	{
-		mobj_t *newring;
-		newring = P_SpawnMobj(actor->x, actor->y, actor->z, actor->info->reactiontime);
-		if (!P_MobjWasRemoved(newring))
-		{
-			newring->momx = actor->momx;
-			newring->momy = actor->momy;
-			newring->momz = actor->momz;
-		}
-		P_RemoveMobj(actor);
+		// Keep stuff from going down inside floors and junk
+		actor->flags &= ~MF_NOCLIPHEIGHT;
+
+		// Let attracted rings move through walls and such.
+		actor->flags |= MF_NOCLIP;
+
+		if (!P_MobjWasRemoved(actor->tracer))
+			P_Attract(actor, actor->tracer, false);
+
 		return;
 	}
 
-	P_LookForShield(actor); // Go find 'em, boy!
-
-	if (!actor->tracer
+	// Lost attracted rings don't clip through walls anymore, and turn into fling rings
+	if	((actor->flags & MF_NOCLIP) &&
+		(P_MobjWasRemoved(actor->tracer)
 		|| !actor->tracer->player
 		|| !actor->tracer->health
-		|| !P_CheckSight(actor, actor->tracer)) // You have to be able to SEE it...sorta
+		|| !(actor->tracer->player->powers[pw_shield] & SH_PROTECTELECTRIC)
+		|| !P_CheckSight(actor, actor->tracer))) // You have to be able to SEE it...sorta
 	{
-		// Lost attracted rings don't through walls anymore.
-		actor->flags &= ~MF_NOCLIP;
 		P_SetTarget(&actor->tracer, NULL);
-		return;
+		actor->type = mobjinfo[actor->type].reactiontime; // Become the reactiontime of MT_RING, currently MT_FLINGRING
+		actor->flags = mobjinfo[actor->type].flags;	// Reset actor flags
 	}
 
-	// If a FlingRing gets attracted by a shield, change it into a normal ring.
-	if (actor->type == (mobjtype_t)actor->info->reactiontime)
-	{
-		actor->type = mobjinfo[actor->type].painchance; // Become the regular version of the fling object.
-		actor->flags = mobjinfo[actor->type].flags;		// Reset actor flags.
-		P_SetMobjState(actor, actor->info->spawnstate); // Go to regular object's spawn state.
-		return;
-	}
-
-	// Keep stuff from going down inside floors and junk
-	actor->flags &= ~MF_NOCLIPHEIGHT;
-
-	// Let attracted rings move through walls and such.
-	actor->flags |= MF_NOCLIP;
-
-	P_Attract(actor, actor->tracer, false);
 }
 
 // Function: A_DropMine
@@ -7366,7 +7358,7 @@ void A_Boss2TakeDamage(void *data)
 		return;
 
 	A_Pain(actor);
-	actor->reactiontime = 1; // turn around
+
 	if (locvar1 == 0) // old A_Invincibilerize behavior
 		actor->movecount = TICRATE;
 	else

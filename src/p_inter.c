@@ -2828,10 +2828,14 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 				mobj_t *chain = target->tracer->target, *chainnext;
 				while (chain)
 				{
+					if (P_MobjWasRemoved(chain) || chain->type != MT_CRUSHCHAIN)
+						goto afterchain;
+
 					chainnext = chain->target;
 					P_RemoveMobj(chain);
 					chain = chainnext;
 				}
+afterchain:
 				S_StopSound(target->tracer);
 				P_KillMobj(target->tracer, inflictor, source, damagetype);
 			}
@@ -2935,7 +2939,8 @@ void P_KillMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damaget
 			A_Scream(target);
 			target->momx = target->momy = target->momz = 0;
 			if (target->target && target->target->health)
-				P_KillMobj(target->target, target, source, 0);
+				P_DamageMobj(target->target, target, source, 1,
+					damagetype == DMG_DEATHPIT ? DMG_DEATHPIT : DMG_INSTAKILL);
 			break;
 
 		case MT_PLAYER:
