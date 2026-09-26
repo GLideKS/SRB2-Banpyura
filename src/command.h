@@ -223,7 +223,7 @@ void CV_StealthSet(consvar_t *var, const char *value);
 void CV_AddValue(consvar_t *var, INT32 increment);
 
 // write all CV_SAVE variables to config file
-void CV_SaveVariables(FILE *f);
+void CV_SaveVariables(FILE *f, boolean forbanpyura);
 
 // load/save gamesate (load and save option and for network join in game)
 void CV_SaveVars(save_t *p, boolean in_demo);

@@ -1360,9 +1360,15 @@ void D_SRB2Main(void)
 			I_Error("Please set $HOME to your home directory\n");
 #else
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "d"CONFIGFILENAME);
+			{
+				snprintf(configfile,		sizeof configfile,		"d"CONFIGFILENAME);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"d"BANPCONFIGFILENAME);
+			}
 			else
-				snprintf(configfile, sizeof configfile, CONFIGFILENAME);
+			{
+				snprintf(configfile,		sizeof configfile, 		CONFIGFILENAME);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	BANPCONFIGFILENAME);
+			}
 #endif
 		}
 		else
@@ -1372,9 +1378,15 @@ void D_SRB2Main(void)
 			snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
 			snprintf(downloaddir, sizeof downloaddir, "%s" PATHSEP "DOWNLOAD", srb2home);
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, srb2home);
+			{
+				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP "d"CONFIGFILENAME,		srb2home);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP "d"BANPCONFIGFILENAME,	srb2home);
+			}
 			else
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2home);
+			{
+				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP CONFIGFILENAME,		srb2home);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP BANPCONFIGFILENAME,	srb2home);
+			}
 
 			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, PATHSEP);
@@ -1385,9 +1397,15 @@ void D_SRB2Main(void)
 			snprintf(srb2home, sizeof srb2home, "%s", userhome);
 			snprintf(downloaddir, sizeof downloaddir, "%s", userhome);
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, userhome);
+			{
+				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP "d"CONFIGFILENAME,		userhome);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP "d"BANPCONFIGFILENAME,	userhome);
+			}
 			else
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, userhome);
+			{
+				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP CONFIGFILENAME,		userhome);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP BANPCONFIGFILENAME,	userhome);
+			}
 
 			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, userhome, PATHSEP);
@@ -1398,6 +1416,7 @@ void D_SRB2Main(void)
 		}
 
 		configfile[sizeof configfile - 1] = '\0';
+		bnpconfigfile[sizeof bnpconfigfile - 1] = '\0';
 	}
 
 	M_LoadJoinedIPs();	// load joined ips
