@@ -559,7 +559,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 					else
 						xwalllights = scalelight[rlight->lightnum];
 
-					pindex = FixedMul(FixedMul(spryscale, wall_scaley), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+					pindex = FixedMul(FixedMul(FixedMul(spryscale, wall_scaley), mapobjectscale), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
 					if (pindex >= MAXLIGHTSCALE)
 						pindex = MAXLIGHTSCALE - 1;
@@ -604,7 +604,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, INT32 x1, INT32 x2)
 			}
 
 			// calculate lighting
-			pindex = FixedMul(FixedMul(spryscale, wall_scaley), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+			pindex = FixedMul(FixedMul(FixedMul(spryscale, wall_scaley), mapobjectscale), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
 			if (pindex >= MAXLIGHTSCALE)
 				pindex = MAXLIGHTSCALE - 1;
@@ -1127,7 +1127,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 					else
 						xwalllights = scalelight[lightnum];
 
-					pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+					pindex = FixedMul(FixedMul(spryscale, mapobjectscale), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
 					if (pindex >= MAXLIGHTSCALE)
 						pindex = MAXLIGHTSCALE-1;
@@ -1221,7 +1221,7 @@ void R_RenderThickSideRange(drawseg_t *ds, INT32 x1, INT32 x2, ffloor_t *pfloor)
 		}
 
 		// calculate lighting
-		pindex = FixedMul(spryscale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+		pindex = FixedMul(FixedMul(spryscale, mapobjectscale), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
 		if (pindex >= MAXLIGHTSCALE)
 			pindex = MAXLIGHTSCALE - 1;
@@ -1525,7 +1525,7 @@ static void R_RenderSegLoop (void)
 		if (segtextured)
 		{
 			// calculate lighting
-			pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+			pindex = FixedMul(FixedMul(rw_scale, mapobjectscale), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
 			if (pindex >=  MAXLIGHTSCALE)
 				pindex = MAXLIGHTSCALE-1;
@@ -1559,7 +1559,7 @@ static void R_RenderSegLoop (void)
 				else
 					xwalllights = scalelight[lightnum];
 
-				pindex = FixedMul(rw_scale, LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
+				pindex = FixedMul(FixedMul(rw_scale, mapobjectscale), LIGHTRESOLUTIONFIX)>>LIGHTSCALESHIFT;
 
 				if (pindex >=  MAXLIGHTSCALE)
 					pindex = MAXLIGHTSCALE-1;
