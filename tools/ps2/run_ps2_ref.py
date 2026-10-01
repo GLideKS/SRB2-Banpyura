@@ -46,7 +46,7 @@ def prepare(demo):
     for pak in (ROOT / 'build/pak').glob('*.PAK') if (ROOT / 'build/pak').exists() else []:
         shutil.copy2(pak, RUN / pak.name)  # cooked packs, if built (phase 2)
     (RUN / '.srb2').mkdir(exist_ok=True)
-    (RUN / '.srb2/reference.cfg').write_text('fpscap "35"\nfullscreen "Off"\nshowfps "Off"\nshowping "Off"\n')
+    (RUN / '.srb2/reference.cfg').write_text('fpscap "35"\nfullscreen "Off"\nshowfps "No"\nshowping "Off"\nrollingdemos "Off"\n')
     if demo:
         shutil.copy2(ROOT / 'golden/phase0-v2' / f'{demo}.lmp', RUN / '.srb2' / f'{demo}.lmp')
     out = RUN / 'refout'
@@ -88,7 +88,8 @@ def first_tic_mismatch(golden, got):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--mode', choices=['demo', 'title'], required=True)
+    ap.add_argument('--mode', choices=['demo', 'title', 'idle'], required=True)
+    ap.add_argument('--idle-seconds', type=int, default=600)
     ap.add_argument('--demo', default='DEMO_001')
     ap.add_argument('--no-build', action='store_true')
     ap.add_argument('--timeout', type=float, default=900)
@@ -101,15 +102,17 @@ def main():
     args = ['-logfile', 'boot.txt', '-ps2ref', 'host:/refout', '-config', 'reference.cfg', '-nolog', '-noendtxt']
     if a.mode == 'demo':
         args += ['-timedemo', a.demo + '.lmp']
-    else:
+    elif a.mode == 'title':
         args += ['-skipintro', '-ps2ref-title', '105']
+    else:
+        args += ['-skipintro', '-ps2ref-idle', str(a.idle_seconds), '-g1profile', '-memtrace']
     args += a.extra
     log = RUN / 'pcsx2.log'
     cmd = [sys.executable, str(ROOT / 'tools/ps2/run_pcsx2.py'), '--elf', str(RUN / 'SRB2.ELF'), '--log', str(log),
            '--args=' + ' '.join(args), '--timeout', str(a.timeout), '--until-file', str(out / 'complete.txt'),
            '--until', 'complete']
     print(' '.join(cmd))
-    subprocess.run(cmd)
+    result = subprocess.run(cmd)
     boot = RUN / 'boot.txt'
     done = (out / 'complete.txt').exists()
     print('finished:', done)
@@ -117,6 +120,12 @@ def main():
         tail = boot.read_text(errors='replace').splitlines()[-12:] if boot.exists() else ['(no boot.txt)']
         print('\n'.join(tail))
         return 1
+    if result.returncode:
+        print('emulator wrapper failed:', result.returncode)
+        return 1
+    if a.mode == 'idle':
+        print('idle completed on real platform clock:', a.idle_seconds, 'seconds')
+        return 0
     if a.mode == 'demo':
         gold = GOLDEN / a.demo
         n, bad = compare(gold, out, ['tics.csv', 'frames.csv', 'frame-*.idx'])

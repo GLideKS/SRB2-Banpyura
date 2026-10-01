@@ -230,7 +230,26 @@ void I_FinishUpdate(void)
 		SCR_DisplayLocalPing();
 
 	if (screens[0])
+	{
+		static UINT32 samples, minimum=UINT32_MAX, maximum;
+		static UINT64 sum;
+		UINT32 begin, end;
+		boolean profile = M_CheckParm("-g1profile") != 0;
+		if (profile)
+			__asm__ volatile("mfc0 %0, $9" : "=r"(begin));
 		ps2gs_present(screens[0], cv_vidwait.value);
+		if (profile)
+		{
+			__asm__ volatile("mfc0 %0, $9" : "=r"(end));
+			end -= begin;
+			if (end < minimum) minimum = end;
+			if (end > maximum) maximum = end;
+			sum += end;
+			if (++samples % 350 == 0)
+				CONS_Printf("G1 gs_submit samples=%u cop0_min=%u max=%u mean=%u\n",
+					samples, minimum, maximum, (UINT32)(sum / samples));
+		}
+	}
 }
 
 void I_UpdateNoVsync(void)

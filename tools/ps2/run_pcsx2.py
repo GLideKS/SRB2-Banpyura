@@ -98,7 +98,12 @@ def main():
                 p.wait(10)
             except subprocess.TimeoutExpired:
                 p.kill()
-            code = 0 if seen else 2  # 2 = timeout
+        if seen:
+            code = 0
+        elif time.time() >= end:
+            code = 2  # a forced close is not successful completion
+        elif p.poll() is not None:
+            code = p.returncode
     finally:
         try:
             LOCK.unlink()
