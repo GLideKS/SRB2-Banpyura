@@ -409,7 +409,12 @@ static void CL_DrawDownloadAddonList(void)
 	INT32 y = ypos + 68;
 	INT32 height = 10;
 	INT32 totalsize = 0;
+#ifdef _MSC_VER
+	/* MSVC has no VLAs; capacity is the same as the source file list. */
+	fileneeded_t *filelist = _alloca(fileneedednum * sizeof(*filelist));
+#else
 	fileneeded_t filelist[fileneedednum];
+#endif
 	INT32 filelistsize = 0;
 	for (int j = 0; j < fileneedednum; j++)
 	{

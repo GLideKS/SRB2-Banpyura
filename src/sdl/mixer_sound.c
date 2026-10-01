@@ -35,6 +35,7 @@
 #if defined(HAVE_SDL) && defined(HAVE_MIXER) && SOUND==SOUND_MIXER
 
 #include "../sounds.h"
+#include "../ps2ref.h"
 #include "../s_sound.h"
 #include "../i_sound.h"
 #include "../w_wad.h"
@@ -482,7 +483,7 @@ static Mix_Chunk *ds2chunk(void *stream)
 	return Mix_QuickLoad_RAW(sound, (Uint32)((UINT8*)d-sound));
 }
 
-void *I_GetSfx(sfxinfo_t *sfx)
+static void *I_GetSfxRaw(sfxinfo_t *sfx)
 {
 	void *lump;
 	Mix_Chunk *chunk;
@@ -598,6 +599,14 @@ void *I_GetSfx(sfxinfo_t *sfx)
 	}
 
 	return NULL; // haven't been able to get anything
+}
+
+void *I_GetSfx(sfxinfo_t *sfx)
+{
+	Mix_Chunk *chunk = I_GetSfxRaw(sfx);
+	if (chunk)
+		PS2Ref_Sfx(sfx->name, chunk->abuf, chunk->alen);
+	return chunk;
 }
 
 void I_FreeSfx(sfxinfo_t *sfx)

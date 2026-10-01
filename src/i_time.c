@@ -12,6 +12,7 @@
 /// \brief Timing for the system layer.
 
 #include "i_time.h"
+#include "ps2ref.h"
 
 #include <math.h>
 
@@ -58,6 +59,12 @@ void I_UpdateTime(fixed_t timescale)
 	double ticratescaled;
 	double elapsedseconds;
 	tic_t realtics;
+	if (PS2Ref_Clock())
+	{
+		if (timescale != FRACUNIT)
+			I_Error("PS2Ref: controlled clock requires timescale=1");
+		return;
+	}
 
 	// get real tics
 	ticratescaled = (double)TICRATE * FIXED_TO_FLOAT(timescale);

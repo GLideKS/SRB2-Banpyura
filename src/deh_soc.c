@@ -10,6 +10,8 @@
 /// \file  deh_soc.c
 /// \brief Load SOC file and change tables and text
 
+#include "ps2ref.h"
+
 #include "doomdef.h"
 #include "d_main.h" // for srb2home
 #include "g_game.h"
@@ -51,7 +53,9 @@
 // Loops through every constant and operation in word and performs its calculations, returning the final value.
 fixed_t get_number(const char *word)
 {
-	return LUA_EvalMath(word);
+	fixed_t value = LUA_EvalMath(word);
+	PS2Ref_Number(word, value);
+	return value;
 
 	/*// DESPERATELY NEEDED: Order of operations support! :x
 	fixed_t i = find_const(&word);

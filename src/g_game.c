@@ -11,6 +11,8 @@
 /// \file  g_game.c
 /// \brief game loop functions, events handling
 
+#include "ps2ref.h"
+
 #include "doomdef.h"
 #include "console.h"
 #include "d_main.h"
@@ -2552,6 +2554,7 @@ void G_Ticker(boolean run)
 		{
 			memset(player_name_changes, 0, sizeof player_name_changes);
 		}
+		PS2Ref_Tic();
 	}
 }
 

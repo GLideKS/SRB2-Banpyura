@@ -134,6 +134,16 @@ add_custom_target(_SRB2_reconf ALL
 )
 add_dependencies(SRB2SDL2 _SRB2_reconf)
 
+option(SRB2_CONFIG_PS2REF "Build observational PS2 reference hooks on the host" OFF)
+if(SRB2_CONFIG_PS2REF)
+    target_sources(SRB2SDL2 PRIVATE ps2ref.c)
+    target_compile_definitions(SRB2SDL2 PRIVATE PS2REF)
+    # Phase-0 experiment: isolate the MSVC Release optimizer crash in lzf.
+    if(MSVC)
+        set_property(SOURCE lzf.c APPEND PROPERTY COMPILE_OPTIONS /Od /Ob0 /GL-)
+    endif()
+endif()
+
 if("${CMAKE_COMPILER_IS_GNUCC}" AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
 	target_link_options(SRB2SDL2 PRIVATE "-Wl,--disable-dynamicbase")
 	if("${SRB2_CONFIG_STATIC_STDLIB}")

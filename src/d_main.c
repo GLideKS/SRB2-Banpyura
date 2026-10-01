@@ -36,6 +36,7 @@
 #include <time.h>
 
 #include "doomdef.h"
+#include "ps2ref.h"
 #include "am_map.h"
 #include "console.h"
 #include "netcode/d_net.h"
@@ -689,6 +690,7 @@ static void D_Display(void)
 		}
 
 		PS_START_TIMING(ps_swaptime);
+		PS2Ref_Frame();
 		I_FinishUpdate(); // page flip or blit buffer
 		PS_STOP_TIMING(ps_swaptime);
 	}

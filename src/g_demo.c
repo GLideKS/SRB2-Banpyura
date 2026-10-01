@@ -11,6 +11,8 @@
 /// \file  g_demo.c
 /// \brief Demo recording and playback
 
+#include "ps2ref.h"
+
 #include "doomdef.h"
 #include "console.h"
 #include "d_main.h"
@@ -2896,6 +2898,8 @@ void G_StopDemo(void)
 
 boolean G_CheckDemoStatus(void)
 {
+	if (demoplayback)
+		PS2Ref_End();
 	G_FreeGhosts();
 
 	// DO NOT end metal sonic demos here

@@ -17,6 +17,8 @@
 /// \file
 /// \brief Main program, simply calls D_SRB2Main and D_SRB2Loop, the high level loop.
 
+#include "../ps2ref.h"
+
 #include "../doomdef.h"
 #include "../m_argv.h"
 #include "../d_main.h"
@@ -177,6 +179,7 @@ int main(int argc, char **argv)
 {
 	myargc = argc;
 	myargv = argv; /// \todo pull out path to exe from this string
+	PS2Ref_Init();
 
 #ifdef HAVE_TTF
 #ifdef _WIN32
