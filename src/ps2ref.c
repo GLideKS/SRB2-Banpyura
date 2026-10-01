@@ -5,6 +5,7 @@
 #include "g_game.h"
 #include "g_demo.h"
 #include "d_main.h"
+#include "w_wad.h"
 #include "p_local.h"
 #include "deh_soc.h"
 #include "p_setup.h"
@@ -74,6 +75,7 @@ void PS2Ref_Number(const char *word, INT32 value)
 boolean PS2Ref_Clock(void)
 {
     if(!tics) return false;
+    if(M_CheckParm("-ps2ref-idle")) return false; // soak uses the normal hardware clock
     g_time.time++;
     g_time.timefrac=0;
     return true;
@@ -118,6 +120,21 @@ void PS2Ref_Tic(void)
         mo->health,p->rings,mo->state?(INT32)(mo->state-states):-1,n,h);
     if(seq==1) memory("memory-level.csv");
 }
+/* -ps2ref-lumps: after W_InitMultipleFiles write the lump table of every loaded file (lumps.tsv) and quit.
+ * Tab separated: wadnum lumpnum name longname fullname size - the PC build (pk3) and the PS2 build (packs) must agree. */
+void PS2Ref_Lumps(void)
+{
+    UINT16 w, l; FILE *f;
+    if(!tics || !M_CheckParm("-ps2ref-lumps")) return;
+    f=output("lumps.tsv","wb");
+    fprintf(f,"wadnum\tlumpnum\tname\tlongname\tfullname\tsize\n");
+    for(w=0;w<numwadfiles;w++) for(l=0;l<wadfiles[w]->numlumps;l++) {
+        const lumpinfo_t *li=&wadfiles[w]->lumpinfo[l];
+        fprintf(f,"%u\t%u\t%s\t%s\t%s\t%lu\n",(unsigned)w,(unsigned)l,li->name,li->longname,li->fullname,(unsigned long)li->size);
+    }
+    fclose(f);
+    PS2Ref_End();
+}
 /* -ps2ref-title N: dump the indexed frame of the title screen at its 35th, 70th ... N-th rendered frame, then quit. */
 static void title_frame(void)
 {
@@ -134,9 +151,51 @@ static void title_frame(void)
     fclose(f);
     if(count>=limit) PS2Ref_End();
 }
+/* Real-clock title soak. Configure rollingdemos Off; do not modify title/game logic. */
+static void idle_frame(void)
+{
+    static precise_t start, next;
+    static UINT32 count, lastcount, countmin=UINT32_MAX, countmax;
+    static UINT64 countsum;
+    precise_t now=I_GetPreciseTime(), precision=I_GetPrecisePrecision();
+    UINT32 seconds, duration, delta=0;
+    char name[64];
+    INT32 parm=M_CheckParm("-ps2ref-idle");
+    if(parm+1>=myargc) I_Error("-ps2ref-idle requires seconds");
+    duration=(UINT32)atoi(myargv[parm+1]);
+    if(!duration) I_Error("-ps2ref-idle requires positive seconds");
+    if(gamestate!=GS_TITLESCREEN) I_Error("PS2Ref idle left the title screen");
+#ifdef PS2
+    UINT32 cop0;
+    __asm__ volatile("mfc0 %0, $9" : "=r"(cop0));
+    if(count) {
+        delta=cop0-lastcount;
+        if(delta<countmin) countmin=delta;
+        if(delta>countmax) countmax=delta;
+        countsum+=delta;
+    }
+    lastcount=cop0;
+#else
+    (void)lastcount;
+    (void)delta;
+#endif
+    count++;
+    if(!start) { start=now; next=now; }
+    seconds=(UINT32)((now-start)/precision);
+    if(now>=next || seconds>=duration) {
+        snprintf(name,sizeof(name),"memory-idle-%03u.csv",seconds);
+        memory(name);
+        CONS_Printf("G1 idle seconds=%u frames=%u zone_payload=%lu cop0_framegap_min=%u max=%u mean=%u\n",
+            seconds,count,(unsigned long)Z_TotalUsage(),count>1?countmin:0,countmax,
+            count>1?(UINT32)(countsum/(count-1)):0);
+        next=now+60*precision;
+    }
+    if(seconds>=duration) PS2Ref_End();
+}
 void PS2Ref_Frame(void)
 {
     UINT32 h; char name[64]; FILE *f; size_t size;
+    if(frames && M_CheckParm("-ps2ref-idle")) { idle_frame(); return; }
     if(frames && M_CheckParm("-ps2ref-title") && M_IsNextParm()) { title_frame(); return; }
     if(!frames || !seq || seq==lastframe || seq%35 || !demoplayback || gamestate!=GS_LEVEL) return;
     if(vid.width!=320 || vid.height!=200 || vid.bpp!=1) I_Error("PS2Ref: expected 320x200x8");

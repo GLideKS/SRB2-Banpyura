@@ -39,7 +39,7 @@ INCS = ['-I' + str(ROOT/'src'), '-I' + str(ROOT/'src/ps2'), '-I' + str(GEN),
 LDFLAGS = ['-T' + str(SDK/'ee/startup/linkfile'), '-L' + str(SDK/'ee/lib'), '-L' + str(DEV/'gsKit/lib'),
            '-L' + str(SDK/'ports/lib'), '-Wl,-zmax-page-size=128', '-Wl,--defsym,_stack_size=0x80000',
            '-Wl,--gc-sections']
-LIBS = ['-lps2_drivers', '-llibpng16_static', '-lz', '-lgskit', '-ldmakit', '-laudsrv', '-lpad', '-lpoweroff', '-lfileXio', '-lcdvd',
+LIBS = ['-lps2_drivers', '-llibpng16_static', '-lz', '-llz4', '-lgskit', '-ldmakit', '-laudsrv', '-lpad', '-lpoweroff', '-lfileXio', '-lcdvd',
         '-ldebug', '-lpatches', '-lm']
 
 

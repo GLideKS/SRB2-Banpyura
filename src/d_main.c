@@ -1166,6 +1166,19 @@ static void ChangeDirForUrlHandler(void)
 // Identify the SRB2 version, and IWAD file to use.
 // ==========================================================================
 
+#ifdef PS2_PROFILE
+// cooked packs (tools/ps2/cook.py) instead of the pk3 files; same files in the same order
+#define NAME_SRB2 "SRB2.PAK"
+#define NAME_ZONES "ZONES.PAK"
+#define NAME_CHARACTERS "CHARS.PAK"
+#define NAME_MUSIC "MUSIC.PAK"
+#else
+#define NAME_SRB2 "srb2.pk3"
+#define NAME_ZONES "zones.pk3"
+#define NAME_CHARACTERS "characters.pk3"
+#define NAME_MUSIC "music.pk3"
+#endif
+
 static void IdentifyVersion(void)
 {
 	char *srb2wad;
@@ -1201,7 +1214,7 @@ static void IdentifyVersion(void)
 	if (srb2wad == NULL)
 		I_Error("No more free memory to look in %s", srb2waddir);
 	else
-		sprintf(srb2wad, pandf, srb2waddir, "srb2.pk3");
+		sprintf(srb2wad, pandf, srb2waddir, NAME_SRB2);
 
 	// will be overwritten in case of -cdrom or unix/win home
 	snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2waddir);
@@ -1211,7 +1224,7 @@ static void IdentifyVersion(void)
 	if (srb2wad != NULL && FIL_ReadFileOK(srb2wad))
 		D_AddFile(&startupwadfiles, srb2wad);
 	else
-		I_Error("srb2.pk3 not found! Expected in %s, ss file: %s\n", srb2waddir, srb2wad);
+		I_Error(NAME_SRB2 " not found! Expected in %s, ss file: %s\n", srb2waddir, srb2wad);
 
 	if (srb2wad)
 		free(srb2wad);
@@ -1220,10 +1233,10 @@ static void IdentifyVersion(void)
 	// checking in D_SRB2Main
 
 	// Add the maps
-	D_AddFile(&startupwadfiles, va(pandf,srb2waddir, "zones.pk3"));
+	D_AddFile(&startupwadfiles, va(pandf,srb2waddir, NAME_ZONES));
 
 	// Add the characters
-	D_AddFile(&startupwadfiles, va(pandf,srb2waddir, "characters.pk3"));
+	D_AddFile(&startupwadfiles, va(pandf,srb2waddir, NAME_CHARACTERS));
 
 #ifdef USE_PATCH_DTA
 	// Add our crappy patches to fix our bugs
@@ -1242,7 +1255,7 @@ static void IdentifyVersion(void)
 				I_Error("File "str" has been modified with non-music/sound lumps"); \
 		}
 
-		MUSICTEST("music.pk3")
+		MUSICTEST(NAME_MUSIC)
 		//MUSICTEST("patch_music.pk3")
 	}
 #endif

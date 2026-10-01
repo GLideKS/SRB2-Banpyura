@@ -71,6 +71,11 @@
 #endif
 #include "m_misc.h" // M_MapNumber
 #include "g_game.h" // G_SetGameModified
+#include "ps2ref.h"
+
+#ifdef PS2_PROFILE
+#include "w_pack.h"
+#endif
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"
@@ -124,9 +129,19 @@ void W_Shutdown(void)
 
 		if (wad->handle)
 			fclose(wad->handle);
+#ifdef PS2_PROFILE
+		free(wad->iobuf);
+#endif
 		Z_Free(wad->filename);
 		if (wad->path)
 			Z_Free(wad->path);
+#ifdef PS2_PROFILE
+		if (wad->pool) // cooked pack: lump names live in one block
+		{
+			Z_Free(wad->pool);
+			wad->numlumps = 0;
+		}
+#endif
 		while (wad->numlumps--)
 		{
 			if (wad->lumpinfo[wad->numlumps].diskpath)
@@ -142,6 +157,9 @@ void W_Shutdown(void)
 	}
 
 	Z_Free(wadfiles);
+#ifdef PS2_PROFILE
+	WPack_Shutdown();
+#endif
 }
 
 //===========================================================================
@@ -859,6 +877,9 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	UINT16 numlumps = 0;
 	UINT8 md5sum[16];
 	int important;
+#ifdef PS2_PROFILE
+	void *pool = NULL, *iobuf = NULL; // cooked pack: name pool, stdio buffer
+#endif
 
 	if (!(refreshdirmenu & REFRESHDIR_ADDFILE))
 		refreshdirmenu = REFRESHDIR_NORMAL|REFRESHDIR_ADDFILE; // clean out cons_alerts that happened earlier
@@ -887,11 +908,20 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	if ((handle = W_OpenWadFile(&filename, true)) == NULL)
 		return W_InitFileError(filename, startup);
 
+#ifdef PS2_PROFILE
+	iobuf = WPack_SetupHandle(handle); // setvbuf must precede every operation on this stream
+	if (!iobuf)
+		I_Error("Cannot allocate resource I/O buffer");
+#endif
+
 	important = W_VerifyNMUSlumps(filename, startup);
 
 	if (important == -1)
 	{
 		fclose(handle);
+#ifdef PS2_PROFILE
+		free(iobuf);
+#endif
 		return INT16_MAX;
 	}
 
@@ -924,8 +954,20 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 		}
 	}
 #endif
+#else
+	memset(md5sum, 0, sizeof md5sum); // not computed on this profile
 #endif
 
+#ifdef PS2_PROFILE
+	if (WPack_Detect(handle)) // cooked pack (signature): to the rest of the engine it is a pk3
+	{
+		boolean nonmusic;
+
+		type = RET_PK3;
+		lumpinfo = WPack_GetLumps(handle, &numlumps, &pool, &nonmusic);
+	}
+	else
+#endif
 	switch(type = ResourceFileDetect(filename))
 	{
 	case RET_SOC:
@@ -947,6 +989,9 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	if (lumpinfo == NULL)
 	{
 		fclose(handle);
+#ifdef PS2_PROFILE
+		free(iobuf);
+#endif
 		return W_InitFileError(filename, startup);
 	}
 
@@ -968,6 +1013,10 @@ UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boole
 	wadfile->foldercount = 0;
 	wadfile->lumpinfo = lumpinfo;
 	wadfile->important = important;
+#ifdef PS2_PROFILE
+	wadfile->pool = pool;
+	wadfile->iobuf = iobuf;
+#endif
 	fseek(handle, 0, SEEK_END);
 	wadfile->filesize = (unsigned)ftell(handle);
 	wadfile->type = type;
@@ -1171,6 +1220,10 @@ UINT16 W_InitFolder(const char *path, boolean mainfile, boolean startup, boolean
 	wadfile->foldercount = foldercount;
 	wadfile->lumpinfo = lumpinfo;
 	wadfile->important = important;
+#ifdef PS2_PROFILE
+	wadfile->pool = NULL;
+	wadfile->iobuf = NULL;
+#endif
 	wadfile->filesize = 0;
 	wadfile->startfolders = M_AATreeAlloc(0);
 	wadfile->endfolders = M_AATreeAlloc(0);
@@ -1228,6 +1281,8 @@ void W_InitMultipleFiles(addfilelist_t *list)
 		else
 			W_InitFile(fn, mainfile, true, false);
 	}
+
+	PS2Ref_Lumps();
 }
 
 /** Make sure a lump number is valid.
@@ -2132,6 +2187,15 @@ size_t W_ReadLumpHeaderPwad(UINT16 wad, UINT16 lump, void *dest, size_t size, si
 	// We setup the desired file handle to read the lump data.
 	if (wadfiles[wad]->type != RET_FOLDER)
 		handle = wadfiles[wad]->handle;
+#ifdef PS2_PROFILE
+	if (wadfiles[wad]->pool) // cooked pack: all reads use the aligned bounce path, including raw lumps
+	{
+		bytesread = WPack_ReadLump(handle, l, dest, size, offset);
+		if (bytesread != size)
+			I_Error("wad %d, lump %d: cannot read pack data", wad, lump);
+		return bytesread;
+	}
+#endif
 	fseek(handle, (long)(l->position + offset), SEEK_SET);
 
 	// But let's not copy it yet. We support different compression formats on lumps, so we need to take that into account.
@@ -2844,6 +2908,9 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
 {
 	FILE *handle;
 	int goodfile = false;
+#ifdef PS2_PROFILE
+	void *iobuf;
+#endif
 
 	if (!checklist)
 		I_Error("No checklist for %s\n", filename);
@@ -2851,6 +2918,14 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
 	if ((handle = W_OpenWadFile(&filename, false)) == NULL)
 		return -1;
 
+#ifdef PS2_PROFILE
+	iobuf = WPack_SetupHandle(handle);
+	if (!iobuf)
+		I_Error("Cannot allocate verification I/O buffer");
+	if (WPack_Detect(handle)) // cooked pack: the cooker already ran this check on the pk3 (header flag)
+		goodfile = WPack_VerifyNMUS(handle);
+	else
+#endif
 	if (stricmp(&filename[strlen(filename) - 4], ".pk3") == 0)
 		goodfile = W_VerifyPK3(handle, checklist, status);
 	else
@@ -2863,6 +2938,9 @@ static int W_VerifyFile(const char *filename, lumpchecklist_t *checklist,
 		}
 	}
 	fclose(handle);
+#ifdef PS2_PROFILE
+	free(iobuf);
+#endif
 	return goodfile;
 }
 

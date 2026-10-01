@@ -60,6 +60,9 @@ typedef enum
 	CM_DEFLATE,
 #endif
 	CM_LZF,
+#ifdef PS2_PROFILE
+	CM_LZ4, // cooked pack lump (w_pack.c)
+#endif
 	CM_UNSUPPORTED
 } compmethod;
 
@@ -139,6 +142,10 @@ typedef struct wadfile_s
 	UINT8 md5sum[16];
 
 	boolean important; // also network - !W_VerifyNMUSlumps
+#ifdef PS2_PROFILE
+	void *pool;   // cooked pack: one block holding all lump names (lumpinfo strings are not separate allocations), else NULL
+	void *iobuf;  // cooked pack: stdio buffer of handle, free() after fclose
+#endif
 } wadfile_t;
 
 #define WADFILENUM(lumpnum) (UINT16)((lumpnum)>>16) // wad file number in upper word

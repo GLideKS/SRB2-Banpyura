@@ -35,7 +35,7 @@
 #include "ps2_boot.h"
 #include "ps2_sys.h"
 
-#define WADKEYWORD1 "srb2.pk3"
+#define WADKEYWORD1 "SRB2.PAK"
 #define PS2_PRECISION ((UINT64)kBUSCLK) // GetTimerSystemTime ticks per second (147 456 000)
 
 FILE *logstream = NULL;

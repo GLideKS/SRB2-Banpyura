@@ -9,6 +9,7 @@ void PS2Ref_Frame(void);
 void PS2Ref_Number(const char *word, INT32 value);
 void PS2Ref_Sfx(const char *name, const void *data, size_t size);
 void PS2Ref_End(void);
+void PS2Ref_Lumps(void);
 boolean PS2Ref_Clock(void);
 #else
 #define PS2Ref_Init() ((void)0)
@@ -17,6 +18,7 @@ boolean PS2Ref_Clock(void);
 #define PS2Ref_Number(w,v) ((void)0)
 #define PS2Ref_Sfx(n,d,s) ((void)0)
 #define PS2Ref_End() ((void)0)
+#define PS2Ref_Lumps() ((void)0)
 #define PS2Ref_Clock() false
 #endif
 #endif
