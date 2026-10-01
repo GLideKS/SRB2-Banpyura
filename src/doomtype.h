@@ -110,11 +110,11 @@ int startswith (const char *base, const char *tag);
 int endswith (const char *base, const char *tag);
 char *xstrtok(char *line, const char *delims);
 
-#if defined (_WIN32) || defined (__HAIKU__) || defined (__EMSCRIPTEN__)
+#if defined (_WIN32) || defined (__HAIKU__) || defined (__EMSCRIPTEN__) || defined (PS2)
 #define HAVE_DOSSTR_FUNCS
 #endif
 
-#if defined (__APPLE__)
+#if defined (__APPLE__) || defined (PS2)
 	#define SRB2_HAVE_STRLCPY
 #elif defined (__GLIBC_PREREQ)
 	// glibc 2.38: added strlcpy and strlcat to _DEFAULT_SOURCE

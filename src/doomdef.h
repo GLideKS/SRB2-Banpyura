@@ -733,7 +733,7 @@ extern int
 #define ROTANGDIFF (360 / ROTANGLES)
 
 /// PNG support
-#ifndef HAVE_PNG
+#if !defined(HAVE_PNG) && !defined(NO_PNG_LUMPS)
 #define NO_PNG_LUMPS
 #endif
 
