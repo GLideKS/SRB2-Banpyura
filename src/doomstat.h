@@ -240,8 +240,14 @@ typedef struct
 
 typedef struct
 {
+#ifdef PS2_PROFILE
+	INT32 numpages; // Number of pages in this prompt
+	INT32 allocpages; // pages allocated below (PS2-11: grown on demand instead of MAX_PAGES x 280 B per prompt)
+	textpage_t page[];
+#else
 	textpage_t page[MAX_PAGES];
 	INT32 numpages; // Number of pages in this prompt
+#endif
 } textprompt_t;
 
 extern textprompt_t *textprompts[MAX_PROMPTS];
@@ -392,7 +398,11 @@ typedef struct
 extern mapheader_t* mapheaderinfo[NUMMAPS];
 
 // Gametypes
+#ifdef PS2_PROFILE
+#define NUMGAMETYPEFREESLOTS 16 // PS2-11: vanilla data defines no custom gametypes
+#else
 #define NUMGAMETYPEFREESLOTS 128
+#endif
 enum GameType
 {
 	GT_COOP = 0, // also used in single player
@@ -588,7 +598,16 @@ extern mapthing_t *redctfstarts[MAXPLAYERS]; // CTF
 
 #define WAYPOINTSEQUENCESIZE 256
 #define NUMWAYPOINTSEQUENCES 256
+#ifdef PS2_PROFILE
+// PS2-11: a sequence's row of 256 pointers (1 KB) is allocated when its first waypoint is added (the table was 256 KB of .bss)
+extern mobj_t **waypoints[NUMWAYPOINTSEQUENCES];
+extern mobj_t *waypoints_emptybuf[1 + WAYPOINTSEQUENCESIZE]; // all NULL: what an unused sequence reads
+#define WAYPOINT(seq, id) ((waypoints[seq] ? waypoints[seq] : waypoints_emptybuf + 1)[id])
+void P_WaypointRowAlloc(UINT8 sequence);
+#else
 extern mobj_t *waypoints[NUMWAYPOINTSEQUENCES][WAYPOINTSEQUENCESIZE];
+#define WAYPOINT(seq, id) (waypoints[seq][id])
+#endif
 extern UINT16 numwaypoints[NUMWAYPOINTSEQUENCES];
 
 void P_AddWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint);

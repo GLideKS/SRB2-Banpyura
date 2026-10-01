@@ -130,7 +130,11 @@ boolean Net_GetNetStat(void)
 // -----------------------------------------------------------------
 // Some structs and functions for acknowledgement of packets
 // -----------------------------------------------------------------
+#ifdef PS2_PROFILE
+#define MAXACKPACKETS 16 // PS2-11: no network: node 0 (the only one) is served by the rebound buffer, never by ackpak (1.5 KB each)
+#else
 #define MAXACKPACKETS 96 // Minimum number of nodes (wat)
+#endif
 #define MAXACKTOSEND 96
 #define URGENTFREESLOTNUM 10
 #define ACKTOSENDTIMEOUT (TICRATE/11)

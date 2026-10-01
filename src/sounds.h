@@ -42,8 +42,14 @@ typedef enum
 } skinsound_t;
 
 // free sfx for S_AddSoundFx()
+#ifdef PS2_PROFILE
+// PS2-11: the vanilla game has 6 skins (<= NUMSKINSOUNDS slots each) and adds a handful of named sounds at run time
+#define NUMSFXFREESLOTS 256
+#define NUMSKINSFXSLOTS (16*NUMSKINSOUNDS)
+#else
 #define NUMSFXFREESLOTS 1600 // Matches SOC Editor.
 #define NUMSKINSFXSLOTS (128*NUMSKINSOUNDS)
+#endif
 
 //
 // SoundFX struct.

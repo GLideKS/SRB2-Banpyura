@@ -1627,7 +1627,7 @@ void T_PolyObjWaypoint(polywaypoint_t *th)
 	if (!po->thinker)
 		po->thinker = &th->thinker;
 
-	target = waypoints[th->sequence][th->pointnum];
+	target = WAYPOINT(th->sequence, th->pointnum);
 
 	if (!target)
 	{

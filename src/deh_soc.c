@@ -2487,6 +2487,21 @@ static void readtextpromptpage(MYFILE *f, INT32 num, INT32 pagenum)
 	Z_Free(s);
 }
 
+#ifdef PS2_PROFILE
+// PS2-11: a prompt holds only the pages it uses (textprompt_t used to embed MAX_PAGES = 128 of them, 36 KB each)
+static void TextPromptReserve(INT32 num, INT32 pages)
+{
+	if (pages > textprompts[num]->allocpages)
+	{
+		textprompts[num] = Z_Realloc(textprompts[num], sizeof (textprompt_t) + pages * sizeof (textpage_t), PU_STATIC, NULL);
+		textprompts[num]->allocpages = pages;
+	}
+}
+#define TEXTPROMPT_RESERVE(pages) TextPromptReserve(num, (pages))
+#else
+#define TEXTPROMPT_RESERVE(pages) ((void)0)
+#endif
+
 void readtextprompt(MYFILE *f, INT32 num)
 {
 	char *s = Z_Malloc(MAXLINELEN, PU_STATIC, NULL);
@@ -2530,11 +2545,13 @@ void readtextprompt(MYFILE *f, INT32 num)
 			if (fastcmp(word, "NUMPAGES"))
 			{
 				textprompts[num]->numpages = min(max(value, 0), MAX_PAGES);
+				TEXTPROMPT_RESERVE(textprompts[num]->numpages);
 			}
 			else if (fastcmp(word, "PAGE"))
 			{
 				if (1 <= value && value <= MAX_PAGES)
 				{
+					TEXTPROMPT_RESERVE(value);
 					textprompts[num]->page[value - 1].backcolor = 1; // default to gray
 					textprompts[num]->page[value - 1].hidehud = 1; // hide appropriate HUD elements
 					readtextpromptpage(f, num, value - 1);
@@ -2999,7 +3016,7 @@ static boolean GoodDataFileName(const char *s)
 	const char *tail = ".dat";
 
 	for (p = s; *p != '\0'; p++)
-		if (!isalnum(*p) && *p != '_' && *p != '-' && *p != '.')
+		if (!isalnum((unsigned char)*p) && *p != '_' && *p != '-' && *p != '.')
 			return false;
 
 	p = s + strlen(s) - strlen(tail);

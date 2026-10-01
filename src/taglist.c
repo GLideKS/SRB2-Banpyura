@@ -24,9 +24,37 @@ size_t num_tags;
 // Taggroups are used to list elements of the same tag, for iteration.
 // Since elements can now have multiple tags, it means an element may appear
 // in several taggroups at the same time. These are built on level load.
+#ifdef PS2_PROFILE
+taggroups_t tags_sectors_t, tags_lines_t, tags_mapthings_t;
+
+/// The group of a tag, NULL if none (or the table is not allocated).
+static taggroup_t *TG_Get(const taggroups_t *ga, const UINT16 tag)
+{
+	return (ga->group && tag < ga->size) ? ga->group[tag] : NULL;
+}
+
+/// Makes sure tag has a slot and returns it.
+static taggroup_t **TG_Slot(taggroups_t *ga, const UINT16 tag)
+{
+	if (!ga->group)
+		ga->size = 0; // freed with the previous level
+	if (tag >= ga->size)
+	{
+		size_t newsize = ((size_t)tag + 64) & ~(size_t)63;
+		ga->group = Z_Realloc(ga->group, newsize * sizeof (taggroup_t *), PU_LEVEL, &ga->group);
+		ga->size = newsize;
+	}
+	return &ga->group[tag];
+}
+#define TG_GROUP(ga, tag) TG_Get((ga), (UINT16)(tag))
+#define TG_PSLOT(ga, tag) TG_Slot((ga), (UINT16)(tag))
+#else
 taggroup_t* tags_sectors[MAXTAGS + 1];
 taggroup_t* tags_lines[MAXTAGS + 1];
 taggroup_t* tags_mapthings[MAXTAGS + 1];
+#define TG_GROUP(ga, tag) ((ga)[(UINT16)(tag)])
+#define TG_PSLOT(ga, tag) (&(ga)[(UINT16)(tag)])
+#endif
 
 /// Adds a tag to a given element's taglist. It will not add a duplicate.
 /// \warning This does not rebuild the global taggroups, which are used for iteration.
@@ -140,7 +168,7 @@ size_t Taggroup_Count (const taggroup_t *group)
 
 /// Iterate thru elements in a global taggroup.
 INT32 Taggroup_Iterate
-(		taggroup_t *garray[],
+(		TAGGROUPS_PARAM,
 		const size_t max_elements,
 		const mtag_t tag,
 		const size_t p)
@@ -154,7 +182,7 @@ INT32 Taggroup_Iterate
 		return -1;
 	}
 
-	group = garray[(UINT16)tag];
+	group = TG_GROUP(garray, tag);
 
 	if (group)
 	{
@@ -166,7 +194,7 @@ INT32 Taggroup_Iterate
 }
 
 /// Add an element to a global taggroup.
-void Taggroup_Add (taggroup_t *garray[], const mtag_t tag, size_t id)
+void Taggroup_Add (TAGGROUPS_PARAM, const mtag_t tag, size_t id)
 {
 	taggroup_t *group;
 	size_t i; // Insert position.
@@ -174,7 +202,7 @@ void Taggroup_Add (taggroup_t *garray[], const mtag_t tag, size_t id)
 	if (tag == MTAG_GLOBAL)
 		return;
 
-	group = garray[(UINT16)tag];
+	group = TG_GROUP(garray, tag);
 
 	// Don't add duplicate entries.
 	if (Taggroup_Find(group, id) != (size_t)-1)
@@ -190,7 +218,7 @@ void Taggroup_Add (taggroup_t *garray[], const mtag_t tag, size_t id)
 	if (!group)
 	{
 		i = 0;
-		group = garray[(UINT16)tag] = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
+		group = *TG_PSLOT(garray, tag) = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
 	}
 	else
 	{
@@ -211,14 +239,14 @@ void Taggroup_Add (taggroup_t *garray[], const mtag_t tag, size_t id)
 	group->elements[i] = id;
 }
 
-static void Taggroup_Add_Init(taggroup_t *garray[], const mtag_t tag, size_t id)
+static void Taggroup_Add_Init(TAGGROUPS_PARAM, const mtag_t tag, size_t id)
 {
 	taggroup_t *group;
 
 	if (tag == MTAG_GLOBAL)
 		return;
 
-	group = garray[(UINT16)tag];
+	group = TG_GROUP(garray, tag);
 
 	if (! in_bit_array(tags_available, (UINT16)tag))
 	{
@@ -228,7 +256,7 @@ static void Taggroup_Add_Init(taggroup_t *garray[], const mtag_t tag, size_t id)
 
 	// Create group if empty.
 	if (!group)
-		group = garray[(UINT16)tag] = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
+		group = *TG_PSLOT(garray, tag) = Z_Calloc(sizeof(taggroup_t), PU_LEVEL, NULL);
 	else if (group->elements[group->count - 1] == id)
 		return; // Don't add duplicates
 
@@ -247,14 +275,20 @@ static size_t total_elements_with_tag (const mtag_t tag)
 {
 	return
 		(
+#ifdef PS2_PROFILE
+				Taggroup_Count(TG_GROUP(tags_sectors, tag)) +
+				Taggroup_Count(TG_GROUP(tags_lines, tag)) +
+				Taggroup_Count(TG_GROUP(tags_mapthings, tag))
+#else
 				Taggroup_Count(tags_sectors[tag]) +
 				Taggroup_Count(tags_lines[tag]) +
 				Taggroup_Count(tags_mapthings[tag])
+#endif
 		);
 }
 
 /// Remove an element from a global taggroup.
-void Taggroup_Remove (taggroup_t *garray[], const mtag_t tag, size_t id)
+void Taggroup_Remove (TAGGROUPS_PARAM, const mtag_t tag, size_t id)
 {
 	taggroup_t *group;
 	size_t rempos;
@@ -263,7 +297,7 @@ void Taggroup_Remove (taggroup_t *garray[], const mtag_t tag, size_t id)
 	if (tag == MTAG_GLOBAL)
 		return;
 
-	group = garray[(UINT16)tag];
+	group = TG_GROUP(garray, tag);
 
 	if ((rempos = Taggroup_Find(group, id)) == (size_t)-1)
 		return;
@@ -279,7 +313,7 @@ void Taggroup_Remove (taggroup_t *garray[], const mtag_t tag, size_t id)
 	{
 		Z_Free(group->elements);
 		Z_Free(group);
-		garray[(UINT16)tag] = NULL;
+		*TG_PSLOT(garray, tag) = NULL;
 	}
 	else
 	{
@@ -324,12 +358,18 @@ void Taglist_InitGlobalTables(void)
 	memset(tags_available, 0, sizeof tags_available);
 	num_tags = 0;
 
+#ifdef PS2_PROFILE
+	// the tables of the previous level went with PU_LEVEL (their owner pointers are NULL now)
+	tags_sectors_t.group = tags_lines_t.group = tags_mapthings_t.group = NULL;
+	tags_sectors_t.size = tags_lines_t.size = tags_mapthings_t.size = 0;
+#else
 	for (i = 0; i < MAXTAGS; i++)
 	{
 		tags_sectors[i] = NULL;
 		tags_lines[i] = NULL;
 		tags_mapthings[i] = NULL;
 	}
+#endif
 	for (i = 0; i < numsectors; i++)
 	{
 		for (j = 0; j < sectors[i].tags.count; j++)
@@ -374,9 +414,9 @@ INT32 Tag_FindLineSpecial(const INT16 special, const mtag_t tag)
 			if (lines[i].special == special)
 				return i;
 	}
-	else if (tags_lines[(UINT16)tag])
+	else if (TG_GROUP(tags_lines, tag))
 	{
-		taggroup_t *tagged = tags_lines[(UINT16)tag];
+		taggroup_t *tagged = TG_GROUP(tags_lines, tag);
 		for (i = 0; i < tagged->count; i++)
 			if (lines[tagged->elements[i]].special == special)
 				return tagged->elements[i];

@@ -156,12 +156,28 @@ mapthing_t *bluectfstarts[MAXPLAYERS];
 mapthing_t *redctfstarts[MAXPLAYERS];
 
 // Maintain waypoints
+#ifdef PS2_PROFILE
+mobj_t **waypoints[NUMWAYPOINTSEQUENCES];
+mobj_t *waypoints_emptybuf[1 + WAYPOINTSEQUENCESIZE]; // [0] is read by index -1 of an empty sequence (P_GetLastWaypoint)
+
+// One pad slot before the row too: P_GetLastWaypoint of an empty sequence reads row[-1] (NULL in the original
+// layout unless the row before it is full)
+void P_WaypointRowAlloc(UINT8 sequence)
+{
+	if (!waypoints[sequence])
+		waypoints[sequence] = (mobj_t **)Z_Calloc((1 + WAYPOINTSEQUENCESIZE) * sizeof (mobj_t *), PU_STATIC, NULL) + 1;
+}
+#else
 mobj_t *waypoints[NUMWAYPOINTSEQUENCES][WAYPOINTSEQUENCESIZE];
+#endif
 UINT16 numwaypoints[NUMWAYPOINTSEQUENCES];
 
 void P_AddWaypoint(UINT8 sequence, UINT8 id, mobj_t *waypoint)
 {
-	waypoints[sequence][id] = waypoint;
+#ifdef PS2_PROFILE
+	P_WaypointRowAlloc(sequence);
+#endif
+	WAYPOINT(sequence, id) = waypoint;
 	if (id >= numwaypoints[sequence])
 		numwaypoints[sequence] = id + 1;
 }
@@ -172,7 +188,7 @@ static void P_ResetWaypoints(void)
 	for (sequence = 0; sequence < NUMWAYPOINTSEQUENCES; sequence++)
 	{
 		for (id = 0; id < numwaypoints[sequence]; id++)
-			waypoints[sequence][id] = NULL;
+			WAYPOINT(sequence, id) = NULL;
 
 		numwaypoints[sequence] = 0;
 	}
@@ -180,12 +196,12 @@ static void P_ResetWaypoints(void)
 
 mobj_t *P_GetFirstWaypoint(UINT8 sequence)
 {
-	return waypoints[sequence][0];
+	return WAYPOINT(sequence, 0);
 }
 
 mobj_t *P_GetLastWaypoint(UINT8 sequence)
 {
-	return waypoints[sequence][numwaypoints[sequence] - 1];
+	return WAYPOINT(sequence, numwaypoints[sequence] - 1);
 }
 
 mobj_t *P_GetPreviousWaypoint(mobj_t *current, boolean wrap)
@@ -203,7 +219,7 @@ mobj_t *P_GetPreviousWaypoint(mobj_t *current, boolean wrap)
 	else
 		id--;
 
-	return waypoints[sequence][id];
+	return WAYPOINT(sequence, id);
 }
 
 mobj_t *P_GetNextWaypoint(mobj_t *current, boolean wrap)
@@ -221,7 +237,7 @@ mobj_t *P_GetNextWaypoint(mobj_t *current, boolean wrap)
 	else
 		id++;
 
-	return waypoints[sequence][id];
+	return WAYPOINT(sequence, id);
 }
 
 mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo)
@@ -233,7 +249,7 @@ mobj_t *P_GetClosestWaypoint(UINT8 sequence, mobj_t *mo)
 
 	for (wp = 0; wp < numwaypoints[sequence]; wp++)
 	{
-		mo2 = waypoints[sequence][wp];
+		mo2 = WAYPOINT(sequence, wp);
 
 		if (!mo2)
 			continue;
@@ -259,11 +275,11 @@ boolean P_IsDegeneratedWaypointSequence(UINT8 sequence)
 	if (numwaypoints[sequence] <= 1)
 		return true;
 
-	first = waypoints[sequence][0];
+	first = WAYPOINT(sequence, 0);
 
 	for (wp = 1; wp < numwaypoints[sequence]; wp++)
 	{
-		waypoint = waypoints[sequence][wp];
+		waypoint = WAYPOINT(sequence, wp);
 
 		if (!waypoint)
 			continue;
@@ -3814,7 +3830,8 @@ static void P_LoadMapBSP(const virtres_t *virt)
 		P_LoadExtendedNodes(&nodedata, nodetype);
 		break;
 	default:
-		if (isprint(signature[0]) && isprint(signature[1]) && isprint(signature[2]) && isprint(signature[3]))
+		if (isprint((unsigned char)signature[0]) && isprint((unsigned char)signature[1])
+			&& isprint((unsigned char)signature[2]) && isprint((unsigned char)signature[3]))
 		{
 			I_Error("Unsupported BSP format '%s' detected!\n", signature);
 			return;

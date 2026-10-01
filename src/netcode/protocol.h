@@ -34,7 +34,13 @@ therein, increment this number.
 //  one that defines the actual packets to
 //  be transmitted.
 
+#ifdef PS2_PROFILE
+// PS2-11: tic ring of the (loopback-only) server; netcmds is BACKUPTICS x 32 players x 9 B. 128 still allows 93 tics
+// (2.6 s) of catch-up after a hitch; demos and saves do not store it.
+#define BACKUPTICS 128
+#else
 #define BACKUPTICS 1024
+#endif
 #define MAXTEXTCMD 256
 
 //

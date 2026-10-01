@@ -259,7 +259,11 @@ extern char logfilename[1024];
 
 #define COLORRAMPSIZE 16
 #define MAXCOLORNAME 32
+#ifdef PS2_PROFILE
+#define NUMCOLORFREESLOTS 32 // PS2-11: vanilla data uses no color freeslots
+#else
 #define NUMCOLORFREESLOTS 1024
+#endif
 
 typedef struct skincolor_s
 {

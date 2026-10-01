@@ -574,7 +574,13 @@ void A_ChangeHeight(void *actor);
 extern int actionsoverridden[NUMACTIONS][MAX_ACTION_RECURSION];
 
 // ratio of states to sprites to mobj types is roughly 6 : 1 : 1
+#ifdef PS2_PROFILE
+// PS2-11: free slots exist for Lua/FREESLOT addons; the vanilla data uses none (checked on srb2/zones/characters/music.pk3).
+// 1024 slots cost ~1.3 MB of static tables (spriteinfo, states, mobjinfo, sprnames, FREE_STATES...).
+#define NUMMOBJFREESLOTS 32
+#else
 #define NUMMOBJFREESLOTS 1024
+#endif
 #define NUMSPRITEFREESLOTS NUMMOBJFREESLOTS
 #define NUMSTATEFREESLOTS (NUMMOBJFREESLOTS*8)
 #define MAXSPRITENAME 64

@@ -53,17 +53,32 @@ extern mtag_t Tag_NextUnused(mtag_t start);
 
 extern size_t num_tags;
 
+#ifdef PS2_PROFILE
+// PS2-11: the three tag->group tables (3 x 64 K pointers = 768 KB of .bss) are sized per level to the highest tag used
+typedef struct
+{
+	taggroup_t **group; // PU_LEVEL, NULL between levels
+	size_t size; // entries in group
+} taggroups_t;
+extern taggroups_t tags_sectors_t, tags_lines_t, tags_mapthings_t;
+#define tags_sectors (&tags_sectors_t)
+#define tags_lines (&tags_lines_t)
+#define tags_mapthings (&tags_mapthings_t)
+#define TAGGROUPS_PARAM taggroups_t *garray
+#else
 extern taggroup_t* tags_sectors[];
 extern taggroup_t* tags_lines[];
 extern taggroup_t* tags_mapthings[];
+#define TAGGROUPS_PARAM taggroup_t *garray[]
+#endif
 
-void Taggroup_Add (taggroup_t *garray[], const mtag_t tag, size_t id);
-void Taggroup_Remove (taggroup_t *garray[], const mtag_t tag, size_t id);
+void Taggroup_Add (TAGGROUPS_PARAM, const mtag_t tag, size_t id);
+void Taggroup_Remove (TAGGROUPS_PARAM, const mtag_t tag, size_t id);
 size_t Taggroup_Find (const taggroup_t *group, const size_t id);
 size_t Taggroup_Count (const taggroup_t *group);
 
 INT32 Taggroup_Iterate
-(		taggroup_t *garray[],
+(		TAGGROUPS_PARAM,
 		const size_t max_elements,
 		const mtag_t tag,
 		const size_t p);

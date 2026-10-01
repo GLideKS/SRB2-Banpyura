@@ -1083,7 +1083,7 @@ static void P_NetArchiveWaypoints(save_t *save_p)
 	{
 		P_WriteUINT16(save_p, numwaypoints[i]);
 		for (j = 0; j < numwaypoints[i]; j++)
-			P_WriteUINT32(save_p, waypoints[i][j] ? waypoints[i][j]->mobjnum : 0);
+			P_WriteUINT32(save_p, WAYPOINT(i, j) ? WAYPOINT(i, j)->mobjnum : 0);
 	}
 }
 
@@ -1095,10 +1095,14 @@ static void P_NetUnArchiveWaypoints(save_t *save_p)
 	for (i = 0; i < NUMWAYPOINTSEQUENCES; i++)
 	{
 		numwaypoints[i] = P_ReadUINT16(save_p);
+#ifdef PS2_PROFILE
+		if (numwaypoints[i])
+			P_WaypointRowAlloc((UINT8)i);
+#endif
 		for (j = 0; j < numwaypoints[i]; j++)
 		{
 			mobjnum = P_ReadUINT32(save_p);
-			waypoints[i][j] = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
+			WAYPOINT(i, j) = (mobjnum == 0) ? NULL : P_FindNewPosition(mobjnum);
 		}
 	}
 }
