@@ -1,0 +1,18 @@
+{
+  "speaker": "\u041d\u0430\u0443\u0448\u043d\u0438\u043a\u0438 (Realtek(R) Audio)",
+  "sample_rate": 48000,
+  "frames": 312000,
+  "channels": {
+    "left": [
+      38.43213033925841,
+      0.1519845575094223,
+      440.0
+    ],
+    "right": [
+      245.65036999730114,
+      0.1277838796377182,
+      224.0
+    ]
+  },
+  "meaning": "Each triple: target-band FFT amplitude, window RMS, peak Hz"
+}

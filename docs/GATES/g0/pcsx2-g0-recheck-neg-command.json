@@ -1,0 +1,13 @@
+[
+  "D:\\PCSX2\\pcsx2-qt.exe",
+  "-portable",
+  "-batch",
+  "-nogui",
+  "-fastboot",
+  "-elf",
+  "D:\\Ai-Project3\\SRB2-PS2-Port\\build\\ps2-hello\\HELLO.ELF",
+  "-logfile",
+  "D:\\Ai-Project3\\SRB2-PS2-Port\\build\\ps2-hello\\pcsx2-g0-recheck-neg.log",
+  "-gameargs",
+  "--badclut"
+]

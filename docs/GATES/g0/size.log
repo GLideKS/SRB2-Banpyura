@@ -1,0 +1,29 @@
+D:\Ai-Project3\SRB2-PS2-Port\build\ps2-hello\HELLO.ELF  :
+section              size      addr
+.text              174248   1048576
+.ctors                 16   1222832
+.dtors                  8   1222848
+.reginfo               24   1222856
+.data                6312   1222912
+.rodata              9936   1229312
+.MIPS.abiflags         24   1239248
+.eh_frame               4   1239272
+.sdata                  8   1239296
+.bss                97152   1239424
+.pdr                18688         0
+.comment               18         0
+.gnu.attributes        16         0
+.debug_info        598030         0
+.debug_abbrev      160804         0
+.debug_loclists     17103         0
+.debug_aranges      13568         0
+.debug_rnglists      3079         0
+.debug_line        277044         0
+.debug_str          36655         0
+.debug_frame        22600         0
+.debug_line_str      1477         0
+.debug_loc         252812         0
+.debug_ranges       12552         0
+Total             1702178
+
+

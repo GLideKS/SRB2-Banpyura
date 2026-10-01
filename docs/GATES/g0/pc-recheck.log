@@ -1,0 +1,8 @@
+RUN 1 DEMO_001
+DONE DEMO_001 {'tics': 1050, 'frames': 30, 'end_leveltic': '1050'}
+RUN 1 DEMO_002
+DONE DEMO_002 {'tics': 1050, 'frames': 30, 'end_leveltic': '1050'}
+RUN 1 DEMO_003
+DONE DEMO_003 {'tics': 1050, 'frames': 30, 'end_leveltic': '1050'}
+RUN 1 DEMO_004
+DONE DEMO_004 {'tics': 1050, 'frames': 30, 'end_leveltic': '1050'}
