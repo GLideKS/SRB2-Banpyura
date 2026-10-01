@@ -118,6 +118,59 @@ ENUM (STRING_HOOK);
 #define LUA_HOOK(type) LUA_HookVoid(HOOK(type))
 #define LUA_HUDHOOK(type,drawlist) LUA_HookHUD(HUD_HOOK(type),(drawlist))
 
+
+#ifdef PS2_PROFILE
+// PS2 profile: no Lua VM, so no hook is ever registered. Every stub returns what the real
+// function returns when the hook list is empty (defaults from lua_hooklib.c prepare_*hook calls).
+static inline void LUA_HookVoid(int hook) {}
+static inline void LUA_HookHUD(int hook, huddrawlist_h drawlist) {}
+static inline int LUA_HookCharacterHUD
+(
+	int hook, huddrawlist_h drawlist, player_t *player,
+	fixed_t x, fixed_t y, fixed_t scale,
+	INT32 skinIndex, UINT8 sprite2, UINT8 frame, UINT8 rotation, skincolornum_t color,
+	INT32 ticker, boolean mode
+) { return 0; }
+
+static inline int  LUA_HookMobj(mobj_t *mo, int hook) { return 0; }
+static inline int  LUA_Hook2Mobj(mobj_t *mo1, mobj_t *mo2, int hook) { return 0; }
+static inline void LUA_HookInt(INT32 integer, int hook) {}
+static inline void LUA_HookBool(boolean value, int hook) {}
+static inline int  LUA_HookPlayer(player_t *player, int hook) { return 0; }
+static inline int  LUA_HookTiccmd(player_t *player, ticcmd_t *cmd, int hook) { return 0; }
+static inline int  LUA_HookKey(event_t *event, int hook) { return 0; }
+
+static inline void LUA_HookPreThinkFrame(void) {}
+static inline void LUA_HookThinkFrame(void) {}
+static inline void LUA_HookPostThinkFrame(void) {}
+static inline int  LUA_HookMobjLineCollide(mobj_t *mo, line_t *line) { return 0; }
+static inline int  LUA_HookTouchSpecial(mobj_t *special, mobj_t *toucher) { return 0; }
+static inline int  LUA_HookShouldDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype) { return 0; }
+static inline int  LUA_HookMobjDamage(mobj_t *target, mobj_t *inflictor, mobj_t *source, INT32 damage, UINT8 damagetype) { return 0; }
+static inline int  LUA_HookMobjDeath(mobj_t *target, mobj_t *inflictor, mobj_t *source, UINT8 damagetype) { return 0; }
+static inline int  LUA_HookMobjMoveBlocked(mobj_t *mo1, mobj_t *mo2, line_t *line) { return 0; }
+static inline int  LUA_HookBotAI(mobj_t *sonic, mobj_t *tails, ticcmd_t *cmd) { return 0; }
+static inline void LUA_HookLinedefExecute(line_t *line, mobj_t *mo, sector_t *sector) {}
+static inline int  LUA_HookPlayerMsg(int source, int target, int flags, char *msg) { return 0; }
+static inline int  LUA_HookHurtMsg(player_t *player, mobj_t *inflictor, mobj_t *source, UINT8 damagetype) { return 0; }
+static inline int  LUA_HookMapThingSpawn(mobj_t *mo, mapthing_t *mthing) { return 0; }
+static inline int  LUA_HookFollowMobj(player_t *player, mobj_t *mo) { return 0; }
+static inline int  LUA_HookCameraThinker(player_t *player, camera_t *thiscam) { return 0; }
+static inline int  LUA_HookPlayerCanDamage(player_t *player, mobj_t *mo) { return 0; }
+static inline void LUA_HookPlayerQuit(player_t *plr, kickreason_t reason) {}
+static inline int  LUA_HookTeamSwitch(player_t *player, int newteam, boolean fromspectators, boolean tryingautobalance, boolean tryingscramble) { return true; } // default: allowed
+static inline int  LUA_HookViewpointSwitch(player_t *player, player_t *newdisplayplayer, boolean forced) { return 0; }
+static inline int  LUA_HookSeenPlayer(player_t *player, player_t *seenfriend) { return true; } // default: seen
+static inline int  LUA_HookShouldJingleContinue(player_t *player, const char *musname) { return 0; }
+static inline int  LUA_HookPlayerCmd(player_t *player, ticcmd_t *cmd) { return 0; }
+static inline int  LUA_HookMusicChange(const char *oldname, struct MusicChange *param) { return 0; }
+static inline fixed_t LUA_HookPlayerHeight(player_t *player) { return -1; } // -1: no override
+static inline int  LUA_HookPlayerCanEnterSpinGaps(player_t *player) { return 0; }
+
+// actions are never overridden by Lua: always run the hardcoded one
+static inline boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor) { return false; }
+
+#else // !PS2_PROFILE
 extern boolean hook_cmd_running;
 
 void LUA_HookVoid(int hook);
@@ -164,3 +217,5 @@ int  LUA_HookPlayerCmd(player_t *, ticcmd_t *);
 int  LUA_HookMusicChange(const char *oldname, struct MusicChange *);
 fixed_t LUA_HookPlayerHeight(player_t *player);
 int  LUA_HookPlayerCanEnterSpinGaps(player_t *player);
+
+#endif // !PS2_PROFILE

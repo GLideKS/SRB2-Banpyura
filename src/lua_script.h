@@ -20,6 +20,32 @@
 #include "g_state.h"
 #include "taglist.h"
 
+#ifdef PS2_PROFILE
+// PS2 profile: the Lua VM is not linked. Everything the core calls is a zero-cost no-op
+// (hooks report "not handled"); the few real symbols are in src/ps2/lua_stub.c.
+#define LUA_IDSIZE 60 // m_perfstats.h hook-info buffers
+typedef ptrdiff_t lua_Integer; // deh_tables.h int_const_s, same type blua uses
+
+extern INT32 lua_lumploading; // is LUA_LoadLump being called?
+extern INT32 lua_locallyloading; // is this wad file being loaded locally?
+
+static inline void LUA_DoLump(UINT16 wad, UINT16 lump, boolean noresults) {}
+static inline void LUA_Step(void) {}
+static inline void LUA_CVarChanged(void *cvar) {}
+static inline void LUA_InvalidateUserdata(void *data) {} // Z_Free
+static inline void LUA_InvalidateLevel(void) {}
+static inline void LUA_InvalidateMapthings(void) {}
+static inline void LUA_InvalidatePlayer(player_t *player) {}
+
+// Save format part: writes/reads exactly what the original writes with no Lua data loaded
+void LUA_Archive(save_t *save_p);
+void LUA_UnArchive(save_t *save_p);
+
+void Got_Luacmd(UINT8 **cp, INT32 playernum); // XD_LUACMD handler (ignored)
+void COM_Lua_f(void); // marks Lua console commands (never registered)
+
+#else // !PS2_PROFILE
+
 #include "blua/lua.h"
 #include "blua/lualib.h"
 #include "blua/lauxlib.h"
@@ -174,4 +200,7 @@ void COM_Lua_f(void);
 return luaL_error(L, "This can only be used in a level!");
 
 int LUA_HTTPLib(lua_State *L);
+
+#endif // !PS2_PROFILE
+
 #endif/*LUA_SCRIPT_H*/

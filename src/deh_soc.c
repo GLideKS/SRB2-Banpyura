@@ -50,10 +50,24 @@
 // also used for LUA_UpdateSprName
 #include "deh_tables.h"
 
+#ifdef PS2_PROFILE
+#include "ps2/soc_numbers.h"
+#endif
+
 // Loops through every constant and operation in word and performs its calculations, returning the final value.
 fixed_t get_number(const char *word)
 {
+#ifdef PS2_PROFILE
+	// no Lua: exact expression text -> value (tools/ps2/gen_soc_numbers.py)
+	fixed_t value;
+	if (!PS2_SOCNumber(word, &value))
+	{
+		CONS_Alert(CONS_WARNING, "get_number: unknown expression \"%s\", using 0\n", word);
+		value = 0;
+	}
+#else
 	fixed_t value = LUA_EvalMath(word);
+#endif
 	PS2Ref_Number(word, value);
 	return value;
 

@@ -26,6 +26,14 @@ extern "C" {
 
 typedef struct huddrawlist_s *huddrawlist_h;
 
+#ifdef PS2_PROFILE
+// no Lua: draw lists are never filled, so the handle is always NULL and drawing is a no-op
+static inline huddrawlist_h LUA_HUD_CreateDrawList(void) { return NULL; }
+static inline void LUA_HUD_ClearDrawList(huddrawlist_h list) {}
+static inline void LUA_HUD_DestroyDrawList(huddrawlist_h list) {}
+static inline boolean LUA_HUD_IsDrawListValid(huddrawlist_h list) { return true; } // nothing to recreate
+static inline void LUA_HUD_DrawList(huddrawlist_h list) {}
+#else
 // Create a new drawlist. Returns a handle to it.
 huddrawlist_h LUA_HUD_CreateDrawList(void);
 // Clears the draw list.
@@ -144,6 +152,7 @@ void LUA_HUD_AddFadeScreen(
 
 // Draws the given draw list
 void LUA_HUD_DrawList(huddrawlist_h list);
+#endif // !PS2_PROFILE
 
 #ifdef __cplusplus
 } // extern "C"

@@ -33,7 +33,9 @@
 #include "hardware/hw3sound.h"
 #endif
 
+#ifndef PS2_PROFILE // PS2: LUA_CallAction is a stub in lua_hook.h
 boolean LUA_CallAction(enum actionnum actionnum, mobj_t *actor);
+#endif
 
 player_t *stplyr;
 INT32 var1;

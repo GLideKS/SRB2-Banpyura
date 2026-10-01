@@ -10,6 +10,11 @@
 /// \file  lua_libs.h
 /// \brief libraries for Lua scripting
 
+#ifdef PS2_PROFILE
+extern boolean mousegrabbedbylua; // lua_stub.c
+extern boolean ignoregameinputs;
+#else // !PS2_PROFILE
+
 extern lua_State *gL;
 
 extern boolean mousegrabbedbylua;
@@ -117,3 +122,5 @@ int LUA_HudLib(lua_State *L);
 int LUA_ColorLib(lua_State *L);
 int LUA_InputLib(lua_State *L);
 int LUA_BanpyuraLib(lua_State *L);
+
+#endif // !PS2_PROFILE

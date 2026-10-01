@@ -50,10 +50,15 @@ enum hud {
 	hud_MAX
 };
 
+#ifdef PS2_PROFILE
+// no Lua: nothing ever hides a vanilla HUD element
+static inline boolean LUA_HudEnabled(enum hud option) { return true; }
+#else
 extern boolean hud_running;
 
 boolean LUA_HudEnabled(enum hud option);
 
 void LUA_SetHudHook(int hook, huddrawlist_h list);
+#endif
 
 #endif // __LUA_HUD_H__
