@@ -113,6 +113,12 @@ void *Z_ReallocAlign(void *ptr, size_t size, INT32 tag, void *user, INT32 alignb
 // (perhaps this should be changed in future?)
 #define Z_FreeTag(tagnum) Z_FreeTags(tagnum, tagnum)
 void Z_FreeTags(INT32 lowtag, INT32 hightag);
+#ifdef PS2
+void Z_PurgeLock(boolean lock); // nestable: no PU_CACHE eviction while locked (3D view rendering)
+#elif defined(PS2_PROFILE)
+// The host profile uses the unchanged host allocator; render lock calls have no effect there.
+static inline void Z_PurgeLock(boolean lock) { (void)lock; }
+#endif
 
 // Iterate memory by tag
 #define Z_IterateTag(tagnum, func) Z_IterateTags(tagnum, tagnum, func)

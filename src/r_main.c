@@ -1522,6 +1522,10 @@ void R_RenderPlayerView(player_t *player)
 		R_SetFov(fov);
 	}
 
+#ifdef PS2_PROFILE
+	Z_PurgeLock(true); // the frame holds flat/texture pointers across allocations (blend tables, colormaps, patches)
+#endif
+
 	R_SetupFrame(player);
 	framecount++;
 	validcount++;
@@ -1633,6 +1637,10 @@ void R_RenderPlayerView(player_t *player)
 	PS_START_TIMING(ps_sw_maskedtime);
 	R_DrawMasked(masks, nummasks);
 	PS_STOP_TIMING(ps_sw_maskedtime);
+
+#ifdef PS2_PROFILE
+	Z_PurgeLock(false);
+#endif
 
 	free(masks);
 }

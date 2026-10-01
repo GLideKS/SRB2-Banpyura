@@ -76,6 +76,10 @@ __attribute__((aligned(16)))
 #endif
 memblock_t;
 
+#if defined(PS2) && !defined(ZDEBUG) && UINTPTR_MAX == UINT32_MAX
+_Static_assert(sizeof (memblock_t) == 32, "PS2 zone header must stay 32 bytes");
+#endif
+
 #define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t))
 #define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - sizeof(memblock_t))
 
@@ -88,7 +92,20 @@ static memblock_t head;
 extern size_t PS2_HeapCapacity(void);
 #define Z_RESERVE (3u << 20)
 #define Z_BLOCK_OVERHEAD (sizeof (size_t) + 64 + 16)
+#define Z_PURGE_MARGIN (256u << 10) // purge this much below the limit, so that the next few allocations need none
 static size_t zlimit, zused;
+static INT32 zpurgelock; // >0 while the 3D view renders: it holds PU_CACHE pointers across allocations
+#define Z_LOCK_SLACK (2u << 20) // how far past zlimit the zone may go while purging is locked
+
+/** Locks/unlocks purging of PU_CACHE blocks (nestable). While locked an allocation may exceed the budget by
+  * Z_LOCK_SLACK instead of evicting; the purge then happens at the first allocation after the unlock.
+  */
+void Z_PurgeLock(boolean lock)
+{
+	if ((lock && zpurgelock == INT32_MAX) || (!lock && zpurgelock == 0))
+		I_Error("Z_PurgeLock: unbalanced lock/unlock");
+	zpurgelock += lock ? 1 : -1;
+}
 
 #endif
 
@@ -101,6 +118,9 @@ static void Command_Memdump_f(void);
 #endif
 
 #if defined(ZDEBUG) && defined(PS2)
+static const char *zreqfile; // the Z_Malloc call being served, for the OOM report
+static INT32 zreqline;
+
 /** Prints the biggest allocation sites (file:line) with their block count and bytes. */
 void Z_DumpOwners(size_t top)
 {
@@ -126,6 +146,7 @@ void Z_DumpOwners(size_t top)
 		own[i].bytes += block->realsize;
 		own[i].count++;
 	}
+	CONS_Printf("OOM: failing request from %s:%d\n", zreqfile ? zreqfile : "?", (int)zreqline);
 	for (j = 0; j < top && j < used; j++)
 	{
 		size_t best = j;
@@ -230,7 +251,8 @@ void Z_Free(void *ptr)
 	block->prev->next = block->next;
 	block->next->prev = block->prev;
 #ifdef PS2
-	zused -= (block->size - sizeof (memblock_t)) + Z_BLOCK_OVERHEAD;
+	// The raw prefix records the exact budget charge, including header and alignment padding.
+	zused -= *(size_t *)block->raw;
 	free(block->raw);
 #else
 	free(block);
@@ -238,16 +260,22 @@ void Z_Free(void *ptr)
 }
 
 #ifdef PS2
-/** Frees every PU_CACHE block that has an owner pointer: its owner sees NULL and rebuilds it on demand
-  * (lump cache, composite textures, flats). Blocks without an owner are scratch memory and stay.
+/** Frees PU_CACHE blocks that have an owner pointer, oldest first, until `need` more bytes fit with some
+  * margin: the owner sees NULL and rebuilds the block on demand (lump cache, composite textures, flats).
+  * Blocks without an owner are scratch memory and stay.
   */
-static void Z_PurgeCache(void)
+static void Z_PurgeCache(size_t need)
 {
-	memblock_t *block, *next;
+	memblock_t *block, *prev;
+	const size_t target = zlimit > Z_PURGE_MARGIN ? zlimit - Z_PURGE_MARGIN : 0;
 
-	for (block = head.next; block != &head; block = next)
+	if (zpurgelock)
+		return;
+
+	// oldest block first (the list is newest-first): what was built last is the likeliest to be in use
+	for (block = head.prev; block != &head && (need > target || zused > target - need); block = prev)
 	{
-		next = block->next;
+		prev = block->prev;
 		if (block->tag == PU_CACHE && block->user != NULL)
 			Z_Free(MEMORY(block));
 	}
@@ -259,7 +287,7 @@ static void Z_PurgeCache(void)
   * \param size Amount of memory to be allocated, in bytes.
   * \return A pointer to the allocated memory.
   */
-static void *xm(size_t size)
+static void *xm(size_t size, size_t alignment)
 {
 	const size_t padedsize = size+sizeof (size_t);
 	void *p;
@@ -267,20 +295,36 @@ static void *xm(size_t size)
 	if (padedsize < size)/* overflow check */
 		I_Error("You are allocating memory too large!");
 #ifdef PS2
+	// Keep the existing minimum padding/overhead; larger alignments need extra raw storage.
+	const size_t extra = alignment > 64 ? alignment - 1 - 64 : 0;
+	size_t charge, limit;
+	if (size > SIZE_MAX - Z_BLOCK_OVERHEAD || extra > SIZE_MAX - size - Z_BLOCK_OVERHEAD)
+		I_Error("You are allocating memory too large!");
+	charge = size + Z_BLOCK_OVERHEAD + extra;
 	if (!zlimit)
-		zlimit = PS2_HeapCapacity() - Z_RESERVE;
-	if (zused + size + Z_BLOCK_OVERHEAD > zlimit)
+	{
+		const size_t capacity = PS2_HeapCapacity();
+		if (capacity <= Z_RESERVE)
+			I_Error("No heap capacity left for zone reserve");
+		zlimit = capacity - Z_RESERVE;
+	}
+	limit = zlimit + (zpurgelock ? Z_LOCK_SLACK : 0);
+	if (!zpurgelock && (charge > limit || zused > limit - charge))
 	{
 		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
-		Z_PurgeCache();
+		Z_PurgeCache(charge);
 	}
-	if (zused + size + Z_BLOCK_OVERHEAD > zlimit)
+	if (charge > limit || zused > limit - charge)
 		p = NULL;
 	else
-		p = malloc(padedsize + 64);
+		p = malloc(padedsize + 64 + extra);
 	if (p)
-		zused += size + Z_BLOCK_OVERHEAD;
+	{
+		*(size_t *)p = charge;
+		zused += charge;
+	}
 #else
+	(void)alignment;
 	p = malloc(padedsize);
 #endif
 
@@ -288,7 +332,7 @@ static void *xm(size_t size)
 	{
 		// Oh crumbs: we're out of heap. Try purging the cache and reallocating.
 #ifdef PS2
-		// already purged above; nothing more to free
+		// Never evict live frame pointers while locked, even if the slack or libc heap is exhausted.
 		p = NULL;
 #else
 		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
@@ -332,7 +376,6 @@ void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 {
 	memblock_t *block;
 	void *ptr;
-	(void)(alignbits); // no longer used, so silence warnings.
 
 #ifdef ZDEBUG2
 	CONS_Debug(DBG_MEMORY, "Z_Malloc %s:%d\n", file, line);
@@ -340,15 +383,28 @@ void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 
 #ifdef PS2
 	{
-		// 16-byte aligned payload; blocks >= 2 KiB (lumps read by DMA) are 64-byte aligned
-		void *raw = xm(sizeof (memblock_t) + size);
-		uintptr_t align = (size >= 2048) ? 64 : 16;
-		uintptr_t payload = ((uintptr_t)raw + sizeof (memblock_t) + align - 1) & ~(align - 1);
+#ifdef ZDEBUG
+		zreqfile = file;
+		zreqline = line;
+#endif
+		if (size > SIZE_MAX - sizeof (memblock_t))
+			I_Error("You are allocating memory too large!");
+		// alignbits is a log2 byte alignment. 2^32 cannot be represented by the EE's size_t.
+		// Reject it on the host test too, rather than shifting by the width of a 32-bit operand.
+		if (alignbits < 0 || alignbits >= 32)
+			I_Error("Z_MallocAlign: invalid alignment bits %d", alignbits);
+		uintptr_t align = (uintptr_t)1 << alignbits;
+		const uintptr_t minimum = (size >= 2048) ? 64 : 16;
+		if (align < minimum)
+			align = minimum;
+		void *raw = xm(sizeof (memblock_t) + size, align);
+		uintptr_t payload = ((uintptr_t)raw + sizeof (size_t) + sizeof (memblock_t) + align - 1) & ~(align - 1);
 		block = MEMBLOCK(payload);
 		block->raw = raw;
 	}
 #else
-	block = xm(sizeof (memblock_t) + size);
+	(void)alignbits; // the non-PS2 allocator retains its original malloc alignment
+	block = xm(sizeof (memblock_t) + size, 0);
 #endif
 	ptr = MEMORY(block);
 	I_Assert((intptr_t)ptr % sizeof (void *) == 0);
@@ -574,6 +630,10 @@ static INT32 nextcleanup = CLEANUPCOUNT;
   */
 void Z_CheckMemCleanup(void)
 {
+#ifdef PS2
+	if (zpurgelock)
+		return;
+#endif
 	if (nextcleanup-- == 0)
 	{
 		nextcleanup = CLEANUPCOUNT;
