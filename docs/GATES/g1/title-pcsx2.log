@@ -1,0 +1,385 @@
+[    0,0266] Program Path: D:\PCSX2-test\pcsx2-qt.exe
+[    0,0267] AppRoot Directory: D:\PCSX2-test
+[    0,0267] Resources Directory: D:\PCSX2-test\resources
+[    0,0269] DataRoot Directory: D:\PCSX2-test
+[    0,0269] Loading config from D:\PCSX2-test\inis\PCSX2.ini.
+[    0,0274] Loading secrets from D:\PCSX2-test\inis\secrets.ini.
+[    0,0285] BIOS Directory: D:\PCSX2-test\bios
+[    0,0285] Snapshots Directory: D:\PCSX2-test\snaps
+[    0,0285] Savestates Directory: D:\PCSX2-test\sstates
+[    0,0285] MemoryCards Directory: D:\PCSX2-test\memcards
+[    0,0285] Logs Directory: D:\PCSX2-test\logs
+[    0,0285] Cheats Directory: D:\PCSX2-test\cheats
+[    0,0285] Patches Directory: D:\PCSX2-test\patches
+[    0,0286] Covers Directory: D:\PCSX2-test\covers
+[    0,0288] Game Settings Directory: D:\PCSX2-test\gamesettings
+[    0,0288] Resources Directory: D:\PCSX2-test\resources
+[    0,0288] User Resources Directory: D:\PCSX2-test\resources
+[    0,0288] Cache Directory: D:\PCSX2-test\cache
+[    0,0288] Textures Directory: D:\PCSX2-test\textures
+[    0,0288] Input Profile Directory: D:\PCSX2-test\inputprofiles
+[    0,0288] Video Dumping Directory: D:\PCSX2-test\videos
+[    0,0288] Debugger Layouts Directory: D:\PCSX2-test\inis\debuggerlayouts
+[    0,0289] Debugger Settings Directory: D:\PCSX2-test\inis\debuggersettings
+[    0,0299] Loaded translation file for language ru-RU
+[    0,0319] PCSX2 v2.6.3
+[    0,0319] Savestate version: 0x9a550000
+[    0,0319] 
+[    0,0319] 
+[    0,0319] Host Machine Init:
+[    0,0320]   Operating System = Microsoft Windows 10+
+[    0,0320]   Available RAM    = 5159 MB (5.04 GB)
+[    0,0320]   Physical RAM     = 15771 MB (15.40 GB)
+[    0,0320] 
+[    0,0320]   Processor        = AMD Ryzen 7 5800U with
+[    0,0320]   Core Count       = 8 cores
+[    0,0320]   Thread Count     = 16 threads
+[    0,0320]   Cluster Count    = 1 clusters
+[    0,0339]   Power Profile    = 'Quiet Mode'
+[    0,0339]   Power States (min/max)
+[    0,0339]     AC             = 5% / 100%
+[    0,0339]     Battery        = 5% / 100%
+[    0,0339] 
+[    0,0340] CPU Extensions Detected:
+[    0,0340]   AVX AVX2
+[    0,0340] 
+[    0,0340] Graphics Adapters Detected:
+[    0,0470]   GPU              = AMD Radeon(TM) Graphics
+[    0,0470]   Driver Version   = 31.0.21923.11000
+[    0,0470] 
+[    0,0475]   GPU              = Microsoft Basic Render Driver
+[    0,0475]   Driver Version   = 10.0.26100.9278
+[    0,0475] 
+[    0,0475] Allocating host memory for virtual systems...
+[    0,0476] Data Memory                      @ 0x00007FF7F0000000 -> 0x00007FF7F9F00000 [159mb]
+[    0,0476] Code Memory                      @ 0x00007FF7F9F00000 -> 0x00007FF80D000000 [305mb]
+[    0,0476]   EE Main Memory                   @ 0x00007FF7F0000000 -> 0x00007FF7F8F00000 [143mb]
+[    0,0476]   IOP Main Memory                  @ 0x00007FF7F8F00000 -> 0x00007FF7F9200000 [3mb]
+[    0,0476]   VU0/1 On-Chip Memory             @ 0x00007FF7F9200000 -> 0x00007FF7F9300000 [1mb]
+[    0,0476]   VTLB Virtual Map                 @ 0x00007FF7F9300000 -> 0x00007FF7F9B00000 [8mb]
+[    0,0476]   VTLB Address Map                 @ 0x00007FF7F9B00000 -> 0x00007FF7F9F00000 [4mb]
+[    0,0476]   R5900 Recompiler Cache           @ 0x00007FF7F9F00000 -> 0x00007FF7FDF00000 [64mb]
+[    0,0476]   R3000A Recompiler Cache          @ 0x00007FF7FDF00000 -> 0x00007FF7FFF00000 [32mb]
+[    0,0476]   Micro VU0 Recompiler Cache       @ 0x00007FF800F00000 -> 0x00007FF804F00000 [64mb]
+[    0,0476]   Micro VU0 Recompiler Cache       @ 0x00007FF804F00000 -> 0x00007FF808F00000 [64mb]
+[    0,0476]   VIF0 Unpack Recompiler Cache     @ 0x00007FF7FFF00000 -> 0x00007FF800700000 [8mb]
+[    0,0476]   VIF1 Unpack Recompiler Cache     @ 0x00007FF800700000 -> 0x00007FF800F00000 [8mb]
+[    0,0476]   VIF Unpack Recompiler Cache      @ 0x00007FF808F00000 -> 0x00007FF809000000 [1mb]
+[    0,0476]   GS Software Renderer             @ 0x00007FF809000000 -> 0x00007FF80D000000 [64mb]
+[    0,0485] Fastmem area: 000001FD5B9A0000 - 000001FE5B99FFFF
+[    0,0491] Generating SSE-optimized unpacking functions for VIF interpreters...
+[    0,0492] Unpack function generation complete.  Generated function statistics:
+[    0,0492]   Reserved buffer    : 1048576 bytes @ 0x00007FF808F00000
+[    0,0492]   x86 code generated : 7344 bytes
+[    0,0492] 
+[    0,0498] SDLInputSource: Using Controller DB from resources.
+[    0,0884] SDLInputSource: 862 gamepad mappings are loaded.
+[    0,1467] Scanning D:\PCSX2\games (recursively)
+[    0,1476] Surface refresh rate: 60 hz
+[    0,1511] Enumerated 0 devices
+[    0,1515] Settings: Advanced Settings are enabled; only proceed if you know what you're doing! No support will be provided if you have the option enabled.
+[    0,1516] Loading BIOS...
+[    0,1518] BIOS Found: Europe  v02.00(04/11/2004)  Console 20041105-175839
+[    0,1537] BIOS rom1 module not found, skipping...
+[    0,1537] BIOS rom2 module not found, skipping...
+[    0,1539] Mechacon version: 0x00020603
+[    0,1539] Opening CDVD...
+[    0,1732] Initializing Elf: 6986600 bytes
+[    0,1747] Disc changed to .
+[    0,1747]   Name: SRB2 [?]
+[    0,1748]   Serial: SRB2
+[    0,1748]   Version: 
+[    0,1748]   CRC: AAF0EEA8
+[    0,1750] No game settings found (tried 'D:\PCSX2-test\gamesettings\AAF0EEA8.ini')
+[    0,1750] Applying settings...
+[    0,1759] [Unsafe Settings] Graphics API is not set to Automatic. This may cause performance problems and graphical issues.
+[    0,1760] OSD [unsafe_settings_warning]:  Graphics API is not set to Automatic. This may cause performance problems and graphical issues.
+[    0,1761] GameDB: Has not been initialized yet, initializing...
+[    0,2174] GameDB: 12838 games on record (loaded in 41,29ms)
+[    0,2410] Reopening memory cards...
+[    0,2412] McdSlot 0 [File]: Mcd001.ps2 [8 MB, UNFORMATTED]
+[    0,2413] McdSlot 1 [File]: Mcd002.ps2 [8 MB, UNFORMATTED]
+[    0,2423] HLE Host: Set 'host:' root path to: D:\Ai-Project3\SRB2-PS2-Port\build\g1-final-title
+[    0,2423] 
+[    0,2426] EE/iR5900 Recompiler Reset
+[    0,2714] iR3000A Recompiler reset.
+[    0,2796] mVU Reset
+[    0,2797] mVU Reset
+[    0,2879] Resetting host memory for virtual systems...
+[    0,5415] Time Zone Offset: GMT+00:00
+[    0,5415] Time Zone Location: London
+[    0,5415] DST: Winter Time
+[    0,5415] Time Format: 24-Hour
+[    0,5415] Date Format: YYYY/MM/DD
+[    0,5415] System Time Basis: Operating System Time
+[    0,5415] Resulting System Time: 2026-10-01 04:46:52
+[    0,5415] Close virtual disk tray
+[    0,5416] Media already loaded (fast boot)
+[    0,5416] Opening GS...
+[    0,5433] acquireRenderWindow() recreate=true fullscreen=false render_to_main=false surfaceless=false
+[    0,5466] Surface refresh rate: 60 hz
+[    0,5627] VK: Enabling extension: VK_KHR_surface
+[    0,5628] VK: Enabling extension: VK_KHR_win32_surface
+[    0,5628] VK: Enabling extension: VK_KHR_get_surface_capabilities2
+[    0,5933] GPU 0: AMD Radeon(TM) Graphics
+[    0,5934] 3 vulkan queue families
+[    0,5934] VK: Enabling extension: VK_KHR_swapchain
+[    0,5934] VK: Enabling extension: VK_KHR_push_descriptor
+[    0,5934] VK: Enabling extension: VK_EXT_provoking_vertex
+[    0,5934] VK: Enabling extension: VK_EXT_memory_budget
+[    0,5934] VK: Enabling extension: VK_EXT_calibrated_timestamps
+[    0,5934] VK: Enabling extension: VK_EXT_attachment_feedback_loop_layout
+[    0,5935] VK: Enabling extension: VK_EXT_line_rasterization
+[    0,5935] VK: Enabling extension: VK_KHR_driver_properties
+[    0,5935] VK: Enabling extension: VK_EXT_full_screen_exclusive
+[    0,6025] GPU timing is supported (TS=1 TS valid bits=64, TS period=10,000000)
+[    0,6026] VK_EXT_provoking_vertex is supported
+[    0,6026] VK_EXT_memory_budget is supported
+[    0,6026] VK_EXT_calibrated_timestamps is supported
+[    0,6026] VK_EXT_rasterization_order_attachment_access is NOT supported
+[    0,6026] VK_EXT_swapchain_maintenance1 is NOT supported
+[    0,6026] VK_EXT_full_screen_exclusive is supported
+[    0,6026] VK_KHR_driver_properties is supported
+[    0,6026] VK_EXT_attachment_feedback_loop_layout is supported
+[    0,6055] Read 62 entries from 'D:\PCSX2-test\cache\vulkan_shaders.idx'
+[    0,6113] Creating a swap chain with 2 images in present mode VK_PRESENT_MODE_IMMEDIATE_KHR
+[    0,6224] Optional features: primitive_id texture_barrier provoking_vertex_last vs_expand
+[    0,6225] Using hardware for point expansion and hardware for line expansion.
+[    0,7119] Vulkan Graphics Driver Info:
+[    0,7119] Driver 2.0.279
+[    0,7119] Vulkan 1.3.260
+[    0,7119] Conformance Version 1.3.3.1
+[    0,7119] 25.8.1 (AMD proprietary shader compiler)
+[    0,7120] AMD proprietary driver
+[    0,7120] AMD Radeon(TM) Graphics
+[    0,7153] Opening SPU2...
+[    0,7165] Creating Cubeb audio stream, sample rate = 48000, expansion = Disabled, buffer = 50, latency = 20, stretching enabled, driver = , device = 
+[    0,7713] cubeb_wasapi.cpp:1912:default device period: 100000, minimum device period: 30000
+[    0,7713] cubeb_wasapi.cpp:1927:Minimum latency in frames: 480
+[    0,7714] Minimum latency: 10 ms (480 audio frames)
+[    0,7715] Allocated buffer of 38400 frames for buffer of 50 ms [expansion Disabled (block size 2048), stretch enabled, target size 2432].
+[    0,7717] cubeb_wasapi.cpp:2617:(000001FD09BDE710) Setup render: device=0000000000000000
+[    0,7743] cubeb_wasapi.cpp:2333:Setup requested=[f=0 r=48000 c=2 l=3] mix=[f=0 r=48000 c=2 l=3]
+[    1,1077] cubeb_wasapi.cpp:2431:Buffer size is: 1056 for render
+[    1,1078] 
+[    1,1079] cubeb_wasapi.cpp:2668:Target sample rate: 48000
+[    1,1079] cubeb_resampler_internal.h:553:Input and output sample-rate match, target rate of 48000Hz
+[    1,1079] cubeb_wasapi.cpp:2870:Follow the system default input or/and output devices
+[    1,1087] cubeb_wasapi.cpp:2898:Stream init successful (000001FD09BDE710)
+[    1,1105] Initializing Pad...
+[    1,1106] Initializing SIO2...
+[    1,1106] Initializing SIO0...
+[    1,1106] Opening DEV9...
+[    1,1106] DEV9: DEV9init
+[    1,1106] DEV9: DEV9init2
+[    1,1106] DEV9: DEV9init3
+[    1,1184] DEV9: DEV9init ok
+[    1,1184] DEV9: DEV9open
+[    1,1184] Opening USB...
+[    1,1185] Opening FW...
+[    1,1188] Frame rate: 60, target speed: 1, target frame rate: 60, ticks per frame: 166666
+[    1,1372] VM subsystems initialized in 985,70 ms
+[    1,1557] # Initialize memory (rev:3.63, ctm:196Mhz, cpuclk:147Mhz detected)
+[    1,1737] R3000 Debugger: Branch to 0x890 (SYSMEM). Clearing modules.
+[    1,1753] RegisterLibraryEntries: excepman version 1.01
+[    1,1765] RegisterLibraryEntries:  intrman version 1.02
+[    1,1766] RegisterLibraryEntries:   ssbusc version 1.01
+[    1,1769] RegisterLibraryEntries:  dmacman version 1.02
+[    1,1771] RegisterLibraryEntries:  timrman version 1.01
+[    1,1773] RegisterLibraryEntries:  sysclib version 1.01
+[    1,1774] RegisterLibraryEntries:    stdio version 1.01
+[    1,1775] RegisterLibraryEntries:  heaplib version 1.01
+[    1,1783] RegisterLibraryEntries:   thbase version 1.01
+[    1,1784] RegisterLibraryEntries:  thevent version 1.01
+[    1,1785] RegisterLibraryEntries:  thsemap version 1.01
+[    1,1785] RegisterLibraryEntries:  thmsgbx version 1.01
+[    1,1785] RegisterLibraryEntries:  thfpool version 1.01
+[    1,1785] RegisterLibraryEntries:  thvpool version 1.01
+[    1,1789] Updating psxCounter[5] mode old repeat 1 new 0 old toggle 0 new 0
+[    1,1791] RegisterLibraryEntries:   vblank version 1.01
+[    1,1795] RegisterLibraryEntries:    ioman version 1.02
+[    1,1800] RegisterLibraryEntries:  modload version 1.01
+[    1,1802] RegisterLibraryEntries:   romdrv version 2.01
+[    1,1804] RegisterLibraryEntries:    stdio version 1.02
+[    1,1807] RegisterLibraryEntries:   sifman version 1.01
+[    1,1809] 
+[    1,1809] PlayStation 2 ======== Hard reset boot
+[    1,1811]  ROMGEN=2001-1004, IOP info (CPUID=1f, CACH_CONFIG=0, 2MB, IOP mode)
+[    1,1812]  <20041105-175839,ROMconf,PS20200EC20041105.bin:11520>
+[    1,1834] # Total accessable memory size: 32 MB (B:2:8:0) (363:2:7c30)
+[    1,1846] # TLB spad=0 kernel=1:12 default=13:30 extended=31:38
+[    1,3625] # Initialize Start.
+[    1,3629] # Initialize GS ...
+[    1,3629] # Initialize INTC ...
+[    1,3629] # Initialize TIMER ...
+[    1,3629] # Initialize DMAC ...
+[    1,3630] # Initialize VU1 ...
+[    1,3633] # Initialize VIF1 ...
+[    1,3634] # Initialize GIF ...
+[    1,3634] # Initialize VU0 ...
+[    1,3636] # Initialize VIF0 ...
+[    1,3636] # Initialize IPU ...
+[    1,3637] # Initialize FPU ...
+[    1,3638] # Initialize User Memory ...
+[    1,4058] # Initialize Scratch Pad ...
+[    1,4059] # Initialize Done.
+[    1,4066] 
+[    1,4066] EE DECI2 Manager version 0.06 Jul  4 2001 16:03:45
+[    1,4066]   CPUID=2e20, BoardID=0, ROMGEN=2001-1004, 32M
+[    1,4066] 
+[    1,4068] RegisterLibraryEntries:   sifcmd version 1.01
+[    1,4133] Initializing Elf: 6986600 bytes
+[    1,4235] ELF Loading: host:D:\Ai-Project3\SRB2-PS2-Port\build\g1-final-title\SRB2.ELF, Game CRC = AAF0EEA8, EntryPoint = 0x001018E8
+[    1,4286] RegisterLibraryEntries:  cdvdman version 1.01
+[    1,4317] RegisterLibraryEntries:  cdvdfsv version 1.01
+[    1,4343] RegisterLibraryEntries:  secrman version 1.03
+[    1,4345] RegisterLibraryEntries:   eesync version 1.01
+[    1,4346] 
+[    1,4346] IOP Realtime Kernel Ver.0.9.1
+[    1,4346]     Copyright 1999 (C) Sony Computer Entertainment Inc. 
+[    1,4352] Reboot service module.(99/11/10)
+[    1,4388] cdvd driver module version 0.1.1 (C)SCEI
+[    1,4392] Load File service.(99/11/05)
+[    1,4393] Multi Threaded Fileio module.(99/11/15) 
+[    1,4393] iop heap service (99/11/03)
+[    1,4434] loadelf: fname host:D:Ai-Project3SRB2-PS2-Portbuildg1-final-titleSRB2.ELF secname all
+[    1,4435] loadelf version 3.30
+[    1,4441] Input ELF format filename = host:D:Ai-Project3SRB2-PS2-Portbuildg1-final-titleSRB2.ELF
+[    1,4473] 1 00100000 0035b184 ......................................................
+[    1,4473] Loaded, host:D:Ai-Project3SRB2-PS2-Portbuildg1-final-titleSRB2.ELF
+[    1,4474] start address 0x1018e8
+[    1,4474] gp address 00000000
+[    1,4476] eeloadHook2: Supplying launch argument(s) '-logfile boot.txt -ps2ref host:/refout -config reference.cfg -nolog -noendtxt -skipintro -ps2ref-title 105' to ELF ''.
+[    1,4479] # Restart Without Memory Clear.
+[    1,4549] # Initialize GS ...
+[    1,4550] # Initialize INTC ...
+[    1,4550] # Initialize TIMER ...
+[    1,4551] # Initialize DMAC ...
+[    1,4551] # Initialize VU1 ...
+[    1,4556] # Initialize VIF1 ...
+[    1,4556] # Initialize GIF ...
+[    1,4556] # Initialize VU0 ...
+[    1,4557] # Initialize VIF0 ...
+[    1,4557] # Initialize IPU ...
+[    1,4557] # Initialize FPU ...
+[    1,4557] # Initialize Scratch Pad ...
+[    1,4558] # Restart Without Memory Clear Done.
+[    1,4560] ELF host:D:\Ai-Project3\SRB2-PS2-Port\build\g1-final-title\SRB2.ELF with entry point at 0x001018E8 is executing.
+[    1,4560] ELF changed, active CRC AAF0EEA8 (host:D:\Ai-Project3\SRB2-PS2-Port\build\g1-final-title\SRB2.ELF)
+[    1,4571] Applying core settings...
+[    1,4576] Updating CPU configuration...
+[    1,4576] iR3000A Recompiler reset.
+[    1,4624] mVU Reset
+[    1,4624] mVU Reset
+[    1,5246] iR3000A Recompiler reset.
+[    1,5282] mVU Reset
+[    1,5283] mVU Reset
+[    1,5418] EE/iR5900 Recompiler Reset
+[    1,5619] BIOS: Successfully found the instruction pattern. Assuming the thread list is here: 8001a580
+[    1,5636] Warning: GetOsdConfigParam2 Reading extended language/version configs, may be incorrect!
+[    1,5679] read/write allocate memory 4000
+[    1,5681] PS2BOOT start argc=11
+[    1,5711] RegisterLibraryEntries:  sio2man version 2.07
+[    1,5713] RegisterLibraryEntries:  sio2man version 1.02
+[    1,5718] PS2BOOT module sio2man id=25 ret=0
+[    1,5724] RegisterLibraryEntries:   padman version 1.02
+[    1,5726] Pad Driver for OSD
+[    1,5728] PS2BOOT module padman id=26 ret=0
+[    1,5730] RegisterLibraryEntries:   iomanx version 1.01
+[    1,5733] PS2BOOT module iomanX id=27 ret=0
+[    1,5741] fileXio: fileXio: fileXio RPC Server v1.00
+[    1,5741] Copyright (c) 2003 adresd
+[    1,5742] PS2BOOT module fileXio id=28 ret=0
+[    1,5744] RegisterLibraryEntries: poweroff version 1.01
+[    1,5746] Poweroff_Handler: Poweroff installed
+[    1,5747] PS2BOOT module poweroff id=29 ret=0
+[    1,5752] PS2BOOT poweroffInit ok=1
+[    1,5759] PS2BOOT boot=host:/ data=host: home=host: host=1 iopreset=0 args=12 (ps2args lines: 0)
+[    1,5790] Setting up SRB2...
+[    1,5798] 
+[    1,5799] 
+[    1,5799] Sonic Robo Blast 2
+[    1,5799] Copyright (C) 1998-2025 by Sonic Team Junior
+[    1,5799] 
+[    1,5799] This program comes with ABSOLUTELY NO WARRANTY.
+[    1,5799] 
+[    1,5799] This is free software, and you are welcome to redistribute it
+[    1,5799] and/or modify it under the terms of the GNU General Public License
+[    1,5799] as published by the Free Software Foundation; either version 2 of
+[    1,5799] the License, or (at your option) any later version.
+[    1,5799] See the 'LICENSE.txt' file for details.
+[    1,5799] 
+[    1,5799] Sonic the Hedgehog and related characters are trademarks of SEGA.
+[    1,5799] We do not claim ownership of SEGA's intellectual property used
+[    1,5799] in this program.
+[    1,5799] 
+[    1,5802] M_StartupLocale...
+[    1,5900] Looking for WADs in: host: (found)
+[    1,6036] Z_Init(): Init zone memory allocation daemon. 
+[    1,6041] System memory: 32MB - Free: 26MB
+[    1,6056] I_InitializeTime()...
+[    1,6100] W_InitMultipleFiles(): Adding IWAD and main PWADs.
+[    1,6575] Added file host:/SRB2.PAK (12614 lumps)
+[    1,6593] Loading SOC from host:/SRB2.PAK|SOC/SOC_LETR
+[    1,6618] Loading SOC from host:/SRB2.PAK|SOC/SOC_TITL
+[    1,6734] Added file host:/ZONES.PAK (169 lumps)
+[    1,6736] Loading SOC from host:/ZONES.PAK|SOC/SOC_EMBM.txt
+[    1,7065] Loading SOC from host:/ZONES.PAK|SOC/SOC_HEAD.txt
+[    1,7236] Loading SOC from host:/ZONES.PAK|SOC/SOC_SECR.txt
+[    1,7267] Loading SOC from host:/ZONES.PAK|SOC/Tutorial.txt
+[    1,7503] Added file host:/CHARS.PAK (2054 lumps)
+[    1,7507] Loading SOC from host:/CHARS.PAK|SOC/Characters.txt
+[    1,7576] Added file host:/MUSIC.PAK (215 lumps)
+[    1,7580] I_StartupGraphics()...
+[    1,7584] open name rom0:ROMVER flag 1 data 41378
+[    1,7587] open fd = 2
+[    1,7606] UpdateVSyncRate: Mode Changed to PAL.
+[    1,7606] Frame rate: 49.76, target speed: 1, target frame rate: 49.76, ticks per frame: 200964
+[    1,7606] Set GS CRTC configuration. PAL  640x512 @ 50.000 (49.76) Interlaced (FIELD)
+[    1,7607] UpdateVSyncRate: Mode Changed to PAL.
+[    1,7607] Frame rate: 50, target speed: 1, target frame rate: 50, ticks per frame: 200000
+[    1,8226] Number of console HUD lines is now 5
+[    2,6158] [EE] Skipping timeout loop at 0x00101DA8 -> 0x00101DC8
+[    2,8743] Pad: DS2 Config Finished - P1/S1 - AL: Off - AB: Usable - VS: Disabled - VL: Disabled - RB: D (0x00000000)
+[    3,9357] PS2 pad: ports 6/0 (state 6 = ready) after 1300 ms
+[    4,0344] Pad: DS2 Config Finished - P1/S1 - AL: On - AB: Locked - VS: Disabled - VL: Disabled - RB: D (0x00000000)
+[    4,2743] Pad: DS2 Config Finished - P1/S1 - AL: On - AB: Locked - VS: Disabled - VL: Disabled - RB: D (0x00000000)
+[    4,3943] Pad: DS2 Config Finished - P1/S1 - AL: On - AB: Locked - VS: Normal - VL: Normal - RB: D (0x00000000)
+[    4,4167] PS2 pad: joystick 1 is port 1
+[    4,4199] PS2 pad: joystick 2 is port 2
+[    4,4414] HU_LoadGraphics()...
+[    4,7537] config file: reference.cfg
+[    4,7660] Executing reference.cfg
+[    4,7704] Default resolution: 1280 x 800
+[    4,7759] Windowed resolution: 640 x 400
+[    4,7794] Default bit depth: 16 bits
+[    4,7969] M_Init(): Init miscellaneous info.
+[    4,8170] R_Init(): Init SRB2 refresh daemon.
+[    4,8206] R_LoadParsedTranslations()...
+[    4,8369] R_LoadTextures()...
+[    8,9368] P_InitPicAnims()...
+[    8,9964] R_InitSprites()...
+[   10,2957] SRB2.PAK added 5261 frames in 391 sprites
+[   10,6631] R_InitColormaps()...
+[   11,1772] S_InitSfxChannels(): Setting up sound channels.
+[   11,2690] ST_Init(): Init status bar.
+[   11,2864] D_CheckNetGame(): Checking network game status.
+[   12,1598] Entering main game loop...
+[   12,1603] ===========================================================================
+[   12,1603]                    We hope you enjoy this game as
+[   12,1603]                      much as we did making it!
+[   12,1603]                             ...wait. =P
+[   12,1603] ===========================================================================
+[   12,1608] Sonic Robo Blast 2 Banpyura v2.2.15 (Oct  1 2026 14:46:30 732fbab ps2) PS2 32-bit 
+[   15,8250] I_ShutdownSystem(): end of logstream.
+[   15,8271] PS2BOOT exit code=0 poweroff=1
+[   15,8277] sceCdPowerOff called. Shutting down VM.
+[   15,8280] Add 0 seconds play time to SRB2 -> now 0
+[   16,0390] cubeb_wasapi.cpp:2985:Stream destroy called, decrementing ref count (000001FD09BDE710)
+[   16,0390] cubeb_wasapi.cpp:1803:000001FD09BDE710: Stop and join render thread: 0000000000000898
+[   16,0394] cubeb_wasapi.cpp:2953:Stream ref count hit zero, destroying (000001FD09BDE710)
+[   16,0634] DEV9: DEV9close
+[   16,0839] Skipping updating pipeline cache 'D:\PCSX2-test\cache\vulkan_pipelines.bin' due to no changes.
+[   16,1024] DEV9: DEV9shutdown
+[   16,1026] NVRAM has not changed, not writing to disk.
+[   16,1405] Releasing host memory for virtual systems...

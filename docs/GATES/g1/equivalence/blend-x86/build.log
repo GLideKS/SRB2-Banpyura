@@ -1,0 +1,13 @@
+blend_hosttest.c
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(164): warning C4244: функция: преобразование "const UINT16" в "UINT8", возможна потеря данных
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(163): warning C4244: инициализация: преобразование "const float" в "const UINT16", возможна потеря данных
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(177): warning C4244: функция: преобразование "const UINT16" в "UINT8", возможна потеря данных
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(180): warning C4244: функция: преобразование "const UINT16" в "UINT8", возможна потеря данных
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(183): warning C4244: функция: преобразование "const UINT16" в "UINT8", возможна потеря данных
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(172): warning C4244: инициализация: преобразование "const float" в "const UINT16", возможна потеря данных
+blend_hosttest.c
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(164): warning C4244: функция: преобразование "const UINT16" в "UINT8", возможна потеря данных
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_renderer.inc(163): warning C4244: инициализация: преобразование "const float" в "const UINT16", возможна потеря данных
+blend_hosttest.c
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_support.inc(145): warning C4244: return: преобразование "UINT16" в "UINT8", возможна потеря данных
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\blend-x86\blend_support.inc(151): warning C4244: return: преобразование "UINT16" в "UINT8", возможна потеря данных

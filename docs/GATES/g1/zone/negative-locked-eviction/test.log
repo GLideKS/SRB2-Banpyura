@@ -1,0 +1,3 @@
+PS2 allocator host: pointer=4 header=32 reserve=3145728 slack=2097152
+PASS alignment 0..16, invalid shifts/size overflow, 20000 alloc/free cycles, 200 realloc cycles
+FAIL: allocation should have refused

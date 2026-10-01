@@ -1,0 +1,65 @@
+Setting up SRB2...
+
+
+Sonic Robo Blast 2
+Copyright (C) 1998-2025 by Sonic Team Junior
+
+This program comes with ABSOLUTELY NO WARRANTY.
+
+This is free software, and you are welcome to redistribute it
+and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2 of
+the License, or (at your option) any later version.
+See the 'LICENSE.txt' file for details.
+
+Sonic the Hedgehog and related characters are trademarks of SEGA.
+We do not claim ownership of SEGA's intellectual property used
+in this program.
+
+M_StartupLocale...
+Looking for WADs in: host: (found)
+Z_Init(): Init zone memory allocation daemon. 
+System memory: 32MB - Free: 26MB
+I_InitializeTime()...
+W_InitMultipleFiles(): Adding IWAD and main PWADs.
+Added file host:/SRB2.PAK (12614 lumps)
+Loading SOC from host:/SRB2.PAK|SOC/SOC_LETR
+Loading SOC from host:/SRB2.PAK|SOC/SOC_TITL
+Added file host:/ZONES.PAK (169 lumps)
+Loading SOC from host:/ZONES.PAK|SOC/SOC_EMBM.txt
+Loading SOC from host:/ZONES.PAK|SOC/SOC_HEAD.txt
+Loading SOC from host:/ZONES.PAK|SOC/SOC_SECR.txt
+Loading SOC from host:/ZONES.PAK|SOC/Tutorial.txt
+Added file host:/CHARS.PAK (2054 lumps)
+Loading SOC from host:/CHARS.PAK|SOC/Characters.txt
+Added file host:/MUSIC.PAK (215 lumps)
+I_StartupGraphics()...
+Number of console HUD lines is now 5
+PS2 pad: ports 6/0 (state 6 = ready) after 1300 ms
+PS2 pad: joystick 1 is port 1
+PS2 pad: joystick 2 is port 2
+HU_LoadGraphics()...
+config file: reference.cfg
+Executing reference.cfg
+Default resolution: 1280 x 800
+Windowed resolution: 640 x 400
+Default bit depth: 16 bits
+M_Init(): Init miscellaneous info.
+R_Init(): Init SRB2 refresh daemon.
+R_LoadParsedTranslations()...
+R_LoadTextures()...
+P_InitPicAnims()...
+R_InitSprites()...
+SRB2.PAK added 5261 frames in 391 sprites
+R_InitColormaps()...
+S_InitSfxChannels(): Setting up sound channels.
+ST_Init(): Init status bar.
+D_CheckNetGame(): Checking network game status.
+Entering main game loop...
+===========================================================================
+                   We hope you enjoy this game as
+                     much as we did making it!
+                            ...wait. =P
+===========================================================================
+Sonic Robo Blast 2 Banpyura v2.2.15 (Oct  1 2026 14:46:30 732fbab ps2) PS2 32-bit 
+I_ShutdownSystem(): end of logstream.

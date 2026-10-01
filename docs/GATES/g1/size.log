@@ -1,0 +1,27 @@
+D:\Ai-Project3\SRB2-PS2-Port\build\g1-final-title\SRB2.ELF  :
+section              size      addr
+.text             2676352   1048576
+.ctors                 16   3724928
+.dtors                  8   3724944
+.reginfo               24   3724952
+.data              508856   3725056
+.rodata            333416   4233984
+.MIPS.abiflags         24   4567400
+.sdata                  4   4567424
+.bss               871392   4567552
+.comment               18         0
+.gnu.attributes        16         0
+.debug_info       1210720         0
+.debug_abbrev      239955         0
+.debug_loclists    470086         0
+.debug_aranges      18920         0
+.debug_rnglists     63238         0
+.debug_line        673341         0
+.debug_str          71518         0
+.debug_frame        52088         0
+.debug_line_str      1399         0
+.debug_loc         377134         0
+.debug_ranges       19048         0
+Total             7587573
+
+

@@ -1,0 +1,20 @@
+﻿-- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
+-- Target is 64-bit
+-- SDL2_mixer_ext found, skipping SDL2_mixer
+-- SDL2 Found
+-- SDL2main Found
+-- SDL2_mixer_ext Found
+-- Zlib Found
+-- libpng Found
+-- No libgme Found
+-- libopenmpt Found
+-- No libcurl Found
+-- No miniupnpc Found
+CMake Warning at assets/CMakeLists.txt:9 (message):
+  SRB2_CONFIG_ASSET_DIRECTORY is not set, so installation will not contain
+  data files.
+System.Management.Automation.RemoteException
+System.Management.Automation.RemoteException
+-- Configuring done (0.6s)
+-- Generating done (0.4s)
+-- Build files have been written to: D:/Ai-Project3/SRB2-PS2-Port/build/host-profile-g1

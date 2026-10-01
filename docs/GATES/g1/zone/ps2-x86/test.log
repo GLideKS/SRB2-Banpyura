@@ -1,0 +1,4 @@
+PS2 allocator host: pointer=4 header=32 reserve=3145728 slack=2097152
+PASS alignment 0..16, invalid shifts/size overflow, 20000 alloc/free cycles, 200 realloc cycles
+PASS pressure eviction, owner clearing, nested lock/slack, budget and libc refusal, deferred cleanup
+PASS all 2414216 checks, 4 expected OOM reports, zero live allocations

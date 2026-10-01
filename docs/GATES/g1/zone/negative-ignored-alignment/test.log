@@ -1,0 +1,2 @@
+PS2 allocator host: pointer=4 header=32 reserve=3145728 slack=2097152
+FAIL: requested alignment up to 65536

@@ -1,0 +1,2 @@
+texture_hosttest.c
+D:\Ai-Project3\SRB2-PS2-Port\build\agent-equivalence-g1\texture-profile-x64\texture_patch.inc(73): warning C4267: =: преобразование из "size_t" в "unsigned int"; возможна потеря данных

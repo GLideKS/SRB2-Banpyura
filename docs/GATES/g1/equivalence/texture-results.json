@@ -1,0 +1,19 @@
+[
+  {
+    "arch": "x86",
+    "fixtures": 4,
+    "cases_per_fixture": 5,
+    "differences": 0
+  },
+  {
+    "arch": "x64",
+    "fixtures": 4,
+    "cases_per_fixture": 5,
+    "differences": 0
+  },
+  {
+    "case": "negative-unaligned-texture-x64",
+    "negative_control": true,
+    "exit": 2
+  }
+]

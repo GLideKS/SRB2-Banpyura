@@ -1,0 +1,33 @@
+﻿{
+    "configure":  [
+                      "cmake",
+                      "-S",
+                      "D:\\Ai-Project3\\SRB2-PS2-Port",
+                      "-B",
+                      "D:\\Ai-Project3\\SRB2-PS2-Port\\build\\host-profile-g1",
+                      "-G",
+                      "Visual Studio 18 2026",
+                      "-A",
+                      "x64",
+                      "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                      "-DVCPKG_MANIFEST_MODE=OFF",
+                      "-DVCPKG_INSTALLED_DIR=D:/AI-projects/SRB2B-plus/build/deps/vcpkg_installed",
+                      "-DSRB2_CONFIG_HWRENDER=OFF",
+                      "-DSRB2_CONFIG_USE_GME=OFF",
+                      "-DSRB2_CONFIG_STATIC_STDLIB=OFF",
+                      "-DSRB2_CONFIG_PS2REF=ON",
+                      "-DSRB2_CONFIG_PS2PROFILE=ON",
+                      "-DSRB2_SDL2_EXE_NAME=srb2-host-profile-g1",
+                      "-DSRB2_HOST_PROFILE_LZ4_SOURCE=D:\\Ai-Project3\\SRB2-PS2-Port\\build\\scratch\\lz4src\\lz4-4.4.5\\lz4libs\\lz4.c",
+                      "-DSRB2_HOST_PROFILE_LZ4_INCLUDE_DIR=D:/ps2dev/ps2sdk/ports/include"
+                  ],
+    "build":  [
+                  "cmake",
+                  "--build",
+                  "D:\\Ai-Project3\\SRB2-PS2-Port\\build\\host-profile-g1",
+                  "--config",
+                  "Release",
+                  "--parallel",
+                  "6"
+              ]
+}

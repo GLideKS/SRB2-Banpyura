@@ -1,0 +1,17 @@
+[
+  {
+    "case": "blend-x86",
+    "exit": 0,
+    "negative_control": false
+  },
+  {
+    "case": "blend-x64",
+    "exit": 0,
+    "negative_control": false
+  },
+  {
+    "case": "negative-old-lazy-x64",
+    "exit": 1,
+    "negative_control": true
+  }
+]

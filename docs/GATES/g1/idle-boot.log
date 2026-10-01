@@ -1,0 +1,148 @@
+Setting up SRB2...
+
+
+Sonic Robo Blast 2
+Copyright (C) 1998-2025 by Sonic Team Junior
+
+This program comes with ABSOLUTELY NO WARRANTY.
+
+This is free software, and you are welcome to redistribute it
+and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2 of
+the License, or (at your option) any later version.
+See the 'LICENSE.txt' file for details.
+
+Sonic the Hedgehog and related characters are trademarks of SEGA.
+We do not claim ownership of SEGA's intellectual property used
+in this program.
+
+M_StartupLocale...
+Looking for WADs in: host: (found)
+Z_Init(): Init zone memory allocation daemon. 
+System memory: 32MB - Free: 26MB
+I_InitializeTime()...
+[mem] t=0.14s heap_in_use=136K zone_static=53K zone_cache=0K
+W_InitMultipleFiles(): Adding IWAD and main PWADs.
+Added file host:/SRB2.PAK (12614 lumps)
+[mem] t=0.21s heap_in_use=1326K zone_static=1178K zone_cache=0K
+Loading SOC from host:/SRB2.PAK|SOC/SOC_LETR
+Loading SOC from host:/SRB2.PAK|SOC/SOC_TITL
+Added file host:/ZONES.PAK (169 lumps)
+[mem] t=0.23s heap_in_use=1537K zone_static=1196K zone_cache=0K
+Loading SOC from host:/ZONES.PAK|SOC/SOC_EMBM.txt
+Loading SOC from host:/ZONES.PAK|SOC/SOC_HEAD.txt
+Loading SOC from host:/ZONES.PAK|SOC/SOC_SECR.txt
+Loading SOC from host:/ZONES.PAK|SOC/Tutorial.txt
+Added file host:/CHARS.PAK (2054 lumps)
+[mem] t=0.30s heap_in_use=1861K zone_static=1444K zone_cache=0K
+Loading SOC from host:/CHARS.PAK|SOC/Characters.txt
+Added file host:/MUSIC.PAK (215 lumps)
+[mem] t=0.31s heap_in_use=1944K zone_static=1463K zone_cache=0K
+I_StartupGraphics()...
+[mem] t=0.31s heap_in_use=1945K zone_static=1464K zone_cache=0K
+Number of console HUD lines is now 5
+PS2 pad: ports 6/0 (state 6 = ready) after 1300 ms
+PS2 pad: joystick 1 is port 1
+PS2 pad: joystick 2 is port 2
+HU_LoadGraphics()...
+[mem] t=3.00s heap_in_use=2520K zone_static=1534K zone_cache=0K
+config file: reference.cfg
+Executing reference.cfg
+Default resolution: 1280 x 800
+Windowed resolution: 640 x 400
+Default bit depth: 16 bits
+M_Init(): Init miscellaneous info.
+R_Init(): Init SRB2 refresh daemon.
+R_LoadParsedTranslations()...
+[mem] t=3.42s heap_in_use=2991K zone_static=1535K zone_cache=0K
+R_LoadTextures()...
+[mem] t=3.44s heap_in_use=2991K zone_static=1535K zone_cache=0K
+P_InitPicAnims()...
+[mem] t=7.54s heap_in_use=4038K zone_static=2415K zone_cache=0K
+R_InitSprites()...
+[mem] t=7.60s heap_in_use=4041K zone_static=2415K zone_cache=0K
+SRB2.PAK added 5261 frames in 391 sprites
+R_InitColormaps()...
+[mem] t=9.27s heap_in_use=5414K zone_static=3752K zone_cache=0K
+S_InitSfxChannels(): Setting up sound channels.
+ST_Init(): Init status bar.
+D_CheckNetGame(): Checking network game status.
+Entering main game loop...
+===========================================================================
+                   We hope you enjoy this game as
+                     much as we did making it!
+                            ...wait. =P
+===========================================================================
+Sonic Robo Blast 2 Banpyura v2.2.15 (Oct  1 2026 14:34:15 732fbab ps2) PS2 32-bit 
+G1 idle seconds=0 frames=1 zone_payload=15235345 cop0_framegap_min=0 max=0 mean=0
+G1 gs_submit samples=350 cop0_min=9209 max=9429 mean=9211
+G1 gs_submit samples=700 cop0_min=9206 max=9429 mean=9210
+G1 gs_submit samples=1050 cop0_min=9206 max=9429 mean=9209
+G1 gs_submit samples=1400 cop0_min=9206 max=12730 mean=9212
+G1 gs_submit samples=1750 cop0_min=9206 max=12730 mean=9211
+G1 gs_submit samples=2100 cop0_min=9206 max=12730 mean=9211
+G1 idle seconds=60 frames=2096 zone_payload=15631553 cop0_framegap_min=7098851 max=33222902 mean=8449453
+G1 gs_submit samples=2450 cop0_min=9206 max=12730 mean=9211
+G1 gs_submit samples=2800 cop0_min=9206 max=12730 mean=9211
+G1 gs_submit samples=3150 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=3500 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=3850 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=4200 cop0_min=9206 max=12730 mean=9210
+G1 idle seconds=120 frames=4192 zone_payload=15631553 cop0_framegap_min=7098851 max=33222902 mean=8445803
+G1 gs_submit samples=4550 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=4900 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=5250 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=5600 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=5950 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=6300 cop0_min=9206 max=12730 mean=9209
+G1 idle seconds=180 frames=6288 zone_payload=15631553 cop0_framegap_min=7098851 max=33222902 mean=8444602
+G1 gs_submit samples=6650 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=7000 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=7350 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=7700 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=8050 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=8400 cop0_min=9206 max=12730 mean=9210
+G1 idle seconds=240 frames=8384 zone_payload=15631553 cop0_framegap_min=7098851 max=33222902 mean=8444007
+G1 gs_submit samples=8750 cop0_min=9206 max=12730 mean=9210
+G1 gs_submit samples=9100 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=9450 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=9800 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=10150 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=10500 cop0_min=9206 max=12730 mean=9209
+G1 idle seconds=300 frames=10480 zone_payload=15631553 cop0_framegap_min=7098851 max=33222902 mean=8443639
+G1 gs_submit samples=10850 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=11200 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=11550 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=11900 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=12250 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=12600 cop0_min=9206 max=12730 mean=9209
+G1 idle seconds=360 frames=12576 zone_payload=15631553 cop0_framegap_min=7098851 max=33222902 mean=8443444
+G1 gs_submit samples=12950 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=13300 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=13650 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=14000 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=14350 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=14700 cop0_min=9206 max=12730 mean=9209
+G1 idle seconds=420 frames=14672 zone_payload=15631553 cop0_framegap_min=7098851 max=33297400 mean=8443278
+G1 gs_submit samples=15050 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=15400 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=15750 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=16100 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=16450 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=16800 cop0_min=9206 max=12730 mean=9209
+G1 idle seconds=480 frames=16768 zone_payload=15631553 cop0_framegap_min=7098851 max=33297400 mean=8443148
+G1 gs_submit samples=17150 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=17500 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=17850 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=18200 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=18550 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=18900 cop0_min=9206 max=12730 mean=9209
+G1 idle seconds=540 frames=18864 zone_payload=15631553 cop0_framegap_min=7098851 max=33297400 mean=8443045
+G1 gs_submit samples=19250 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=19600 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=19950 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=20300 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=20650 cop0_min=9206 max=12730 mean=9209
+G1 gs_submit samples=21000 cop0_min=9206 max=12730 mean=9209
+G1 idle seconds=600 frames=20959 zone_payload=15631553 cop0_framegap_min=7098851 max=33297400 mean=8442951
+I_ShutdownSystem(): end of logstream.

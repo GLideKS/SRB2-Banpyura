@@ -1,0 +1,15 @@
+﻿╨Т╨╡╤А╤Б╨╕╤П MSBuild 18.0.5+e22287bf1 ╨┤╨╗╤П .NET Framework
+
+  CMake Deprecation Warning at cmake/Comptime.cmake:1 (cmake_minimum_required):
+    Compatibility with CMake < 3.10 will be removed from a future version of
+    CMake.
+  
+    Update the VERSION argument <min> value.  Or, use the <min>...<max> syntax
+    to tell CMake that the project requires at least <min> but has been updated
+    to work with policies introduced by <max> or earlier.
+  
+  
+  SRB2HostProfileLZ4.vcxproj -> D:\Ai-Project3\SRB2-PS2-Port\build\host-profile-g1\src\Release\SRB2HostProfileLZ4.lib
+cl : ╨║╨╛╨╝╨░╨╜╨┤╨╜╨░╤П ╤Б╤В╤А╨╛╨║╨░  warning D9025: ╨┐╨╡╤А╨╡╨╛╨┐╤А╨╡╨┤╨╡╨╗╨╡╨╜╨╕╨╡ "/D_WINDOWS" ╨╜╨░ "/U_WINDOWS" [D:\Ai-Project3\SRB2-PS2-Port\build\host-profile-g1\src\SRB2SDL2.vcxproj]
+  comptime.c
+  SRB2SDL2.vcxproj -> D:\Ai-Project3\SRB2-PS2-Port\build\host-profile-g1\bin\Release\srb2-host-profile-g1.exe

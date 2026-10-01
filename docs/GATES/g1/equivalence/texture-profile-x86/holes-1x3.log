@@ -1,0 +1,6 @@
+single: pixels=1 posts=1 hash=a5077426
+single-flip: pixels=1 posts=1 hash=0a2306af
+composite: pixels=8 posts=2 hash=cff01007
+clipped: pixels=2 posts=1 hash=85cc5d6f
+offscreen: pixels=8 posts=2 hash=9bd9ed23
+Texture bounds, reconstruction and red zones PASS (32-bit host)

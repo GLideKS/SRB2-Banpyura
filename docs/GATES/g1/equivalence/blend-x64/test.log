@@ -1,0 +1,8 @@
+forward/cold: 31 tables, 0 defined-byte differences in 0 tables; 15841 measured undefined edge bytes
+reverse/cold: 31 tables, 0 defined-byte differences in 0 tables; 15841 measured undefined edge bytes
+shuffled/cold: 31 tables, 0 defined-byte differences in 0 tables; 15841 measured undefined edge bytes
+shuffled/cache-purge: 31 tables, 0 defined-byte differences in 0 tables; 15841 measured undefined edge bytes
+shuffled/LUT-reconstruction-before-every-table: 31 tables, 0 defined-byte differences in 0 tables; 15841 measured undefined edge bytes
+TRANS tables, getter clipping, init-palette capture and payload red zones PASS
+blendtest: 31 tables, 0 differences (index 255 edges excluded)
+Blend equivalence: PASS

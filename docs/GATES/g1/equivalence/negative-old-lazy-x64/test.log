@@ -1,0 +1,4 @@
+forward/cold: 31 tables, 0 defined-byte differences in 0 tables; 15841 measured undefined edge bytes
+reverse/cold: 31 tables, 213841 defined-byte differences in 31 tables; 15841 measured undefined edge bytes
+shuffled/cold: 31 tables, 218363 defined-byte differences in 31 tables; 15841 measured undefined edge bytes
+Blend equivalence: FAIL

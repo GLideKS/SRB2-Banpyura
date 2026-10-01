@@ -1,0 +1,3 @@
+zone_hosttest.c
+D:\Ai-Project3\SRB2-PS2-Port\tools\ps2\../../src/z_zone.c(77): error C2220: следующее предупреждение рассматривается как ошибка
+D:\Ai-Project3\SRB2-PS2-Port\tools\ps2\../../src/z_zone.c(77): warning C4324: memblock_s: структура была дополнена нулями из-за описателя выравнивания

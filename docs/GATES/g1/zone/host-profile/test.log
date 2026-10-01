@@ -1,0 +1,2 @@
+PASS host PS2_PROFILE lock no-op and unchanged malloc semantics
+PASS all 72 checks, 0 expected OOM reports, zero live allocations

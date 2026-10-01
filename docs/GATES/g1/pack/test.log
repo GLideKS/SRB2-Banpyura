@@ -1,0 +1,35 @@
+Host build: /DPS2_PROFILE /W3 /WX; see build.log (selected legacy-header warnings disabled)
+SRB2.PAK: 12614 lumps (11437 LZ4), 252200 partial reads, 0 failures (exit 0, 4.05s)
+  12614 lumps: index/names/hash/longname/size/crc32 vs pk3 -> 0 differences
+ZONES.PAK: 169 lumps (169 LZ4), 3380 partial reads, 0 failures (exit 0, 0.81s)
+  169 lumps: index/names/hash/longname/size/crc32 vs pk3 -> 0 differences
+CHARS.PAK: 2054 lumps (2045 LZ4), 41060 partial reads, 0 failures (exit 0, 0.24s)
+  2054 lumps: index/names/hash/longname/size/crc32 vs pk3 -> 0 differences
+MUSIC.PAK: 215 lumps (106 LZ4), 4300 partial reads, 0 failures (exit 0, 1.30s)
+  215 lumps: index/names/hash/longname/size/crc32 vs pk3 -> 0 differences
+Synthetic two-raw-block LZ4 fixture: 1 lumps (1 LZ4), 20 partial reads, 0 failures (exit 0)
+Synthetic 65-raw-block LZ4 fixture: 1 lumps (1 LZ4), 20 partial reads, 0 failures (exit 0)
+Validation table-overlaps-header: exit 0
+Validation pool-overlaps-table: exit 0
+Validation data-overlaps-pool: exit 0
+Validation pool-outside-file: exit 0
+Validation unknown-flags: exit 0
+Validation bad-name-offset: exit 0
+Validation wrong-longname: exit 0
+Validation unknown-codec: exit 0
+Validation raw-size-mismatch: exit 0
+Validation unaligned-payload: exit 0
+Validation payload-outside-file: exit 0
+Validation index-exceeds-disksize: exit 0
+Validation zero-block-size: exit 0
+Validation oversized-block: exit 0
+Validation raw-block-size-mismatch: exit 0
+Validation index-total-too-short: exit 0
+Validation index-total-too-long: exit 0
+Validation invalid-unrequested-block: exit 0
+Validation invalid-lz4-body: exit 0
+Validation unterminated-pool: exit 0
+Validation truncated-file: exit 0
+Validation: 21 rejection cases, 2 independently CRC-checked baselines, 0 failures
+Input preservation: 8 packs/archives hashed before and after, 0 changed
+TOTAL differences/failures: 0
