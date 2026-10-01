@@ -18,7 +18,7 @@ cmd = [str(cc), '-D_EE', '-G0', '-O2', '-std=gnu11', '-Wall', '-Wextra', '-Werro
        '-I'+str(SDK/'ee/include'), '-I'+str(SDK/'common/include'), '-I'+str(DEV/'gsKit/include'),
        '-T'+str(SDK/'ee/startup/linkfile'), '-L'+str(SDK/'ee/lib'), '-L'+str(DEV/'gsKit/lib'),
        '-Wl,-zmax-page-size=128', '-Wl,--defsym,_stack_size=0x80000',
-       '-Wl,-Map='+str(OUT/'HELLO.map'), str(ROOT/'tools/ps2/hello.c'), '-o', str(OUT/'HELLO.ELF'),
+       '-Wl,-Map='+str(OUT/'HELLO.map'), str(ROOT/'tools/ps2/hello.c'), str(ROOT/'tools/ps2/division_probe.c'), '-o', str(OUT/'HELLO.ELF'),
        '-lgskit', '-ldmakit', '-laudsrv', '-lpad', '-lpoweroff', '-lfileXio', '-ldebug', '-lpatches', '-lm']
 with (OUT/'build.log').open('w') as log:
     log.write(json.dumps(cmd)+'\n'); log.flush()
@@ -32,3 +32,6 @@ for tool, args in [('size', ['-A']), ('readelf',['-h']), ('gcc',['--version'])]:
     p=subprocess.run([str(cc).replace('gcc.exe',tool+'.exe')]+args+([] if tool=='gcc' else [str(OUT/'HELLO.ELF')]),env=env,capture_output=True,text=True)
     (OUT/f'{tool}.log').write_text(p.stdout+p.stderr)
 print('Built', OUT/'HELLO.ELF', (OUT/'HELLO.ELF').stat().st_size, 'bytes', hashlib.sha256((OUT/'HELLO.ELF').read_bytes()).hexdigest())
+for symbol in ['ps2_probe_sdiv','ps2_probe_udiv','__divdi3','__udivdi3']:
+    p=subprocess.run([str(cc).replace('gcc.exe','objdump.exe'),'-d','--disassemble='+symbol,str(OUT/'HELLO.ELF')],env=env,capture_output=True,text=True,check=True)
+    (OUT/(symbol+'.asm')).write_text(p.stdout)

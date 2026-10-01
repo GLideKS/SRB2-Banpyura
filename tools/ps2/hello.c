@@ -9,6 +9,8 @@
 /* Direct RPC descriptors are never passed to newlib, and vice versa. */
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h>
+#include <io_common.h>
+#include <libcdvd.h>
 #include <fcntl.h>
 #include <malloc.h>
 #include <stdio.h>
@@ -18,6 +20,8 @@
 #include <screenshot.h>
 
 static char padbuf[256] __attribute__((aligned(64)));
+extern long long ps2_probe_sdiv(long long a, long long b);
+extern unsigned long long ps2_probe_udiv(unsigned long long a, unsigned long long b);
 static u32 count(void) { u32 v; __asm__ volatile("mfc0 %0,$9" : "=r"(v)); return v; }
 static int module(const char *path) {
     int r = SifLoadModule(path,0,NULL);
@@ -26,6 +30,9 @@ static int module(const char *path) {
 }
 static u32 rgb(unsigned i) { return i | ((i ^ 0x55u)<<8) | ((255u-i)<<16); }
 static unsigned swap34(unsigned i) { return (i & ~24u) | ((i & 8u)<<1) | ((i & 16u)>>1); }
+static int argument(int argc, char **argv, const char *name) {
+    int i; for(i=0;i<argc;i++) if(!strcmp(argv[i],name)) return 1; return 0;
+}
 int main(int argc, char **argv) {
     u32 start = count(), t;
     int fd, r, n, failures=0, state=0;
@@ -41,6 +48,13 @@ int main(int argc, char **argv) {
     if (!pixels || !io || !clut || !readback || !pcm) { printf("P0 FAIL allocation\n"); return 1; }
     printf("P0 aligned64=%d buffers=%u\n", !(((u32)pixels|(u32)io|(u32)clut|(u32)readback|(u32)pcm|(u32)padbuf)&63),64000+2048+1024+320*224*4+4096+256);
     sceSifInitRpc(0);
+    t=count();
+    { long long a=ps2_probe_sdiv(9223372036854775807LL,3);
+      long long b=ps2_probe_sdiv(-9223372036854775807LL,7);
+      unsigned long long c=ps2_probe_udiv(18446744073709551615ULL,17);
+      r=a==3074457345618258602LL && b==-1317624576693539401LL && c==1085102592571150095ULL;
+      failures+=!r;
+      printf("P0 div64 match=%d signed=%lld negative=%lld unsigned=%llu count=%lu\n",r,a,b,c,(unsigned long)(count()-t)); }
     /* Host filesystem is also exercised through newlib, solely as a probe. */
     { FILE *f=fopen("host:sentinel.bin","rb"); n=f ? (int)fread(io,1,2048,f) : -1;
       if(f) fclose(f);
@@ -48,16 +62,28 @@ int main(int argc, char **argv) {
     t=count();
     if(module("host:iomanX.irx")<0 || module("host:fileXio.irx")<0) return 2;
     fileXioInit();
-    fd=fileXioOpen("host:sentinel.bin",O_RDONLY,0);
+    fd=fileXioOpen("host:sentinel.bin",FIO_O_RDONLY,0);
     n=fd>=0 ? fileXioRead(fd,io,2048) : fd;
     if(fd>=0) fileXioClose(fd);
     r=n==2048 && io[0]==0x53 && io[2047]==0x42;
     failures+=!r; printf("P0 fileXio_host bytes=%d match=%d count=%lu\n",n,r,(unsigned long)(count()-t));
-    fd=fileXioOpen("host:host-write.bin",O_WRONLY|O_CREAT|O_TRUNC,0666);
+    fd=fileXioOpen("host:host-write.bin",FIO_O_WRONLY|FIO_O_CREAT|FIO_O_TRUNC,0666);
     SyncDCache(io,io+2048);
     n=fd>=0 ? fileXioWrite(fd,io,2048) : fd;
     if(fd>=0) fileXioClose(fd);
     failures+=n!=2048; printf("P0 fileXio_write bytes=%d\n",n);
+    if(argument(argc,argv,"--disc")) {
+        t=count(); sceCdInit(SCECdINIT);
+        if(module("host:cdfs.irx")<0) return 6;
+        fd=fileXioOpen("cdfs:/SENTINEL.BIN",FIO_O_RDONLY,0);
+        n=fd>=0 ? fileXioRead(fd,io,2048) : fd;
+        if(fd>=0) fileXioClose(fd);
+        r=n==2048 && io[0]==0x53 && io[2047]==0x42; failures+=!r;
+        printf("P0 fileXio_cdfs bytes=%d match=%d count=%lu\n",n,r,(unsigned long)(count()-t));
+        { FILE *f=fopen("cdfs:/SENTINEL.BIN","rb"); n=f ? (int)fread(io,1,2048,f) : -1;
+          if(f) fclose(f);
+          printf("P0 stdio_cdfs bytes=%d match=%d\n",n,n==2048 && io[0]==0x53 && io[2047]==0x42); }
+    }
     t=count();
     dmaKit_init(D_CTRL_RELE_OFF,D_CTRL_MFD_OFF,D_CTRL_STS_UNSPEC,D_CTRL_STD_OFF,D_CTRL_RCYC_8,1<<DMA_CHANNEL_GIF);
     dmaKit_chan_init(DMA_CHANNEL_GIF);
@@ -72,7 +98,7 @@ int main(int argc, char **argv) {
     tex.Vram=gsKit_vram_alloc(gs,gsKit_texture_size(320,200,GS_PSM_T8),GSKIT_ALLOC_USERBUFFER);
     tex.VramClut=gsKit_vram_alloc(gs,1024,GSKIT_ALLOC_USERBUFFER);
     for(y=0;y<200;y++) for(x=0;x<320;x++) pixels[y*320+x]=(x/20)+(y/12%16)*16;
-    for(i=0;i<256;i++) clut[swap34(i)]=rgb(i)|0x80000000u;
+    for(i=0;i<256;i++) clut[argument(argc,argv,"--badclut") ? i : swap34(i)]=rgb(i)|0x80000000u;
     SyncDCache(pixels,pixels+64000); SyncDCache(clut,clut+256);
     gsKit_texture_upload(gs,&tex);
     for(i=0;i<3;i++) {
@@ -82,12 +108,12 @@ int main(int argc, char **argv) {
     }
     printf("P0 gs_submit count=%lu tex_vram=%lu clut_vram=%lu tbw=%lu\n",(unsigned long)(count()-t),(unsigned long)tex.Vram,(unsigned long)tex.VramClut,(unsigned long)tex.TBW);
     t=count();
-    r=ps2_screenshot(readback,gs->ScreenBuffer[gs->ActiveBuffer],0,0,320,224,GS_PSM_CT32);
+    r=ps2_screenshot(readback,gs->ScreenBuffer[gs->ActiveBuffer]/256,0,0,320,224,GS_PSM_CT32);
     bad=0;
-    for(y=1;y<199;y++) for(x=1;x<319;x++) if((readback[(y+12)*320+x]&0xffffff)!=rgb(pixels[y*320+x])) bad++;
-    failures+=bad!=0 || r!=0;
-    printf("P0 gs_readback result=%d mismatch=%u pixels=%u first=%08lx expected=%08lx count=%lu\n",r,bad,198*318,(unsigned long)readback[13*320+1],(unsigned long)rgb(pixels[321]),(unsigned long)(count()-t));
-    fd=fileXioOpen("host:gs-rgba.bin",O_WRONLY|O_CREAT|O_TRUNC,0666);
+    for(y=0;y<200;y++) for(x=0;x<320;x++) if((readback[(y+12)*320+x]&0xffffff)!=rgb(pixels[y*320+x])) bad++;
+    failures+=bad!=0 || r!=1;
+    printf("P0 gs_readback result=%d mismatch=%u pixels=%u first=%08lx expected=%08lx count=%lu\n",r,bad,200*320,(unsigned long)readback[13*320+1],(unsigned long)rgb(pixels[321]),(unsigned long)(count()-t));
+    fd=fileXioOpen("host:gs-rgba.bin",FIO_O_WRONLY|FIO_O_CREAT|FIO_O_TRUNC,0666);
     SyncDCache(readback,readback+320*224); if(fd>=0) { fileXioWrite(fd,readback,320*224*4); fileXioClose(fd); }
     t=count();
     if(module("rom0:LIBSD")<0 || module("host:audsrv.irx")<0) return 3;
@@ -108,7 +134,12 @@ int main(int argc, char **argv) {
     r=padInit(0); printf("P0 pad_init result=%d\n",r);
     r=padPortOpen(0,0,padbuf); printf("P0 pad_open result=%d\n",r); failures+=r!=1;
     for(i=0;i<180;i++) { state=padGetState(0,0); if(state==PAD_STATE_STABLE || state==PAD_STATE_FINDCTP1) break; gsKit_vsync_wait(); }
+    r=padSetMainMode(0,0,PAD_MMODE_DUALSHOCK,PAD_MMODE_LOCK);
+    printf("P0 pad_analog_request result=%d\n",r); failures+=r!=1;
+    for(i=0;i<30;i++) gsKit_vsync_wait();
+    state=padGetState(0,0);
     r=padRead(0,0,&buttons); failures+=r<=0;
+    failures+=buttons.mode!=0x73 && buttons.mode!=0x79;
     printf("P0 pad state=%d read=%d buttons=%04x mode=%02x sticks=%u,%u,%u,%u count=%lu\n",state,r,buttons.btns,buttons.mode,buttons.ljoy_h,buttons.ljoy_v,buttons.rjoy_h,buttons.rjoy_v,(unsigned long)(count()-t));
     padPortClose(0,0); audsrv_quit();
     printf("P0 COMPLETE failures=%d total_count=%lu\n",failures,(unsigned long)(count()-start));
