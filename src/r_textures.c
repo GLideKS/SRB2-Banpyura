@@ -584,7 +584,12 @@ UINT8 *R_GetFlatForTexture(size_t texnum)
 		texpatch_t *patch = &texture->patches[0];
 		UINT16 wadnum = patch->wad;
 		lumpnum_t lumpnum = patch->lump;
+#ifdef PS2_PROFILE
+		// PU_STATIC while in use: the Z_Malloc below may purge PU_CACHE blocks (freed again at the end)
+		UINT8 *pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_STATIC);
+#else
 		UINT8 *pdata = W_CacheLumpNumPwad(wadnum, lumpnum, PU_CACHE);
+#endif
 		size_t lumplength = W_LumpLengthPwad(wadnum, lumpnum);
 
 #ifndef NO_PNG_LUMPS
@@ -593,11 +598,18 @@ UINT8 *R_GetFlatForTexture(size_t texnum)
 		else
 #endif
 		{
+#ifdef PS2_PROFILE
+			// purgable: Z_PurgeCache drops it when the zone runs out, this function rebuilds it
+			texture->flat = Z_Malloc(lumplength, PU_CACHE, &texture->flat);
+#else
 			texture->flat = Z_Malloc(lumplength, PU_STATIC, NULL);
+#endif
 			memcpy(texture->flat, pdata, lumplength);
 		}
 
+#ifndef PS2_PROFILE
 		Z_SetUser(texture->flat, &texture->flat);
+#endif
 
 		Z_Free(pdata);
 	}

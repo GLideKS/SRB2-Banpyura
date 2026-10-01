@@ -698,3 +698,24 @@ void PS2_ReportOOM(void)
 	}
 #endif
 }
+
+// Largest block malloc can still give plus what is already allocated = the heap capacity the zone may use.
+// Probed once (binary search over malloc/free), before the zone fills the heap.
+size_t PS2_HeapCapacity(void)
+{
+	size_t lo = 0, hi = 32u << 20, used = (size_t)mallinfo().uordblks;
+
+	while (hi - lo > 4096)
+	{
+		size_t mid = lo + (hi - lo) / 2;
+		void *p = malloc(mid);
+		if (p)
+		{
+			free(p);
+			lo = mid;
+		}
+		else
+			hi = mid;
+	}
+	return used + lo;
+}

@@ -82,6 +82,16 @@ memblock_t;
 // both the head and tail of the zone memory block list
 static memblock_t head;
 
+#ifdef PS2
+// Zone budget: raw malloc users (zlib, libpng, stdio, GS buffers) must never find the heap empty, so the
+// zone stops at heap capacity minus a reserve and purges instead.
+extern size_t PS2_HeapCapacity(void);
+#define Z_RESERVE (3u << 20)
+#define Z_BLOCK_OVERHEAD (sizeof (size_t) + 64 + 16)
+static size_t zlimit, zused;
+
+#endif
+
 //
 // Function prototypes
 //
@@ -220,11 +230,29 @@ void Z_Free(void *ptr)
 	block->prev->next = block->next;
 	block->next->prev = block->prev;
 #ifdef PS2
+	zused -= (block->size - sizeof (memblock_t)) + Z_BLOCK_OVERHEAD;
 	free(block->raw);
 #else
 	free(block);
 #endif
 }
+
+#ifdef PS2
+/** Frees every PU_CACHE block that has an owner pointer: its owner sees NULL and rebuilds it on demand
+  * (lump cache, composite textures, flats). Blocks without an owner are scratch memory and stay.
+  */
+static void Z_PurgeCache(void)
+{
+	memblock_t *block, *next;
+
+	for (block = head.next; block != &head; block = next)
+	{
+		next = block->next;
+		if (block->tag == PU_CACHE && block->user != NULL)
+			Z_Free(MEMORY(block));
+	}
+}
+#endif
 
 /** malloc() that doesn't accept failure.
   *
@@ -239,7 +267,19 @@ static void *xm(size_t size)
 	if (padedsize < size)/* overflow check */
 		I_Error("You are allocating memory too large!");
 #ifdef PS2
-	p = malloc(padedsize + 64);
+	if (!zlimit)
+		zlimit = PS2_HeapCapacity() - Z_RESERVE;
+	if (zused + size + Z_BLOCK_OVERHEAD > zlimit)
+	{
+		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
+		Z_PurgeCache();
+	}
+	if (zused + size + Z_BLOCK_OVERHEAD > zlimit)
+		p = NULL;
+	else
+		p = malloc(padedsize + 64);
+	if (p)
+		zused += size + Z_BLOCK_OVERHEAD;
 #else
 	p = malloc(padedsize);
 #endif
@@ -247,10 +287,11 @@ static void *xm(size_t size)
 	if (p == NULL)
 	{
 		// Oh crumbs: we're out of heap. Try purging the cache and reallocating.
-		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
 #ifdef PS2
-		p = malloc(padedsize + 64);
+		// already purged above; nothing more to free
+		p = NULL;
 #else
+		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
 		p = malloc(padedsize);
 #endif
 

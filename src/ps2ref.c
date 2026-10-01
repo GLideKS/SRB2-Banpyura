@@ -6,6 +6,9 @@
 #include "g_demo.h"
 #include "d_main.h"
 #include "p_local.h"
+#include "deh_soc.h"
+#include "p_setup.h"
+#include "r_state.h"
 #include "info.h"
 #include "screen.h"
 #include "v_video.h"
@@ -75,10 +78,21 @@ boolean PS2Ref_Clock(void)
     g_time.timefrac=0;
     return true;
 }
+/* -ps2ref-scan: evaluate every string argument of every linedef/thing of the loaded map through get_number,
+ * so the soc.tsv table covers strings that would otherwise only be evaluated when a special triggers. */
+static void scan_map(void)
+{
+    size_t i; int k;
+    for(i=0;i<numlines;i++) for(k=0;k<NUMLINESTRINGARGS;k++)
+        if(lines[i].stringargs[k]) (void)get_number(lines[i].stringargs[k]);
+    for(i=0;i<nummapthings;i++) for(k=0;k<NUMMAPTHINGSTRINGARGS;k++)
+        if(mapthings[i].stringargs[k]) (void)get_number(mapthings[i].stringargs[k]);
+}
 void PS2Ref_Tic(void)
 {
     thinker_t *th; UINT32 h=2166136261u, n=0; INT32 i;
     mobj_t *mo; player_t *p;
+    if(tics && gamestate==GS_LEVEL && M_CheckParm("-ps2ref-scan")) { scan_map(); PS2Ref_End(); }
     if(!tics || !demoplayback || gamestate!=GS_LEVEL) return;
     p=&players[consoleplayer]; mo=p->mo;
     if(!mo) I_Error("PS2Ref: demo has no player mobj");
@@ -104,9 +118,26 @@ void PS2Ref_Tic(void)
         mo->health,p->rings,mo->state?(INT32)(mo->state-states):-1,n,h);
     if(seq==1) memory("memory-level.csv");
 }
+/* -ps2ref-title N: dump the indexed frame of the title screen at its 35th, 70th ... N-th rendered frame, then quit. */
+static void title_frame(void)
+{
+    static UINT32 count;
+    UINT32 limit=(UINT32)atoi(M_GetNextParm());
+    UINT32 h; char name[64]; FILE *f; size_t size;
+    if(gamestate!=GS_TITLESCREEN) return;
+    count++;
+    if(count%35) return;
+    size=(size_t)vid.width*vid.height; h=hash_bytes(2166136261u,screens[0],size);
+    fprintf(frames,"%u,%u,%d,%d,%08x\n",count,count,vid.width,vid.height,h);
+    snprintf(name,sizeof(name),"title-%06u.idx",count); f=output(name,"wb");
+    if(fwrite(screens[0],1,size,f)!=size) I_Error("PS2Ref: short frame write");
+    fclose(f);
+    if(count>=limit) PS2Ref_End();
+}
 void PS2Ref_Frame(void)
 {
     UINT32 h; char name[64]; FILE *f; size_t size;
+    if(frames && M_CheckParm("-ps2ref-title") && M_IsNextParm()) { title_frame(); return; }
     if(!frames || !seq || seq==lastframe || seq%35 || !demoplayback || gamestate!=GS_LEVEL) return;
     if(vid.width!=320 || vid.height!=200 || vid.bpp!=1) I_Error("PS2Ref: expected 320x200x8");
     size=(size_t)vid.width*vid.height; h=hash_bytes(2166136261u,screens[0],size);

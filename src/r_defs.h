@@ -987,7 +987,12 @@ typedef struct
 #endif
 } spriteframe_t;
 
+#ifdef PS2_PROFILE
+// Standard sprite names give frames 0..63 (R_ReadSpriteFrame rejects >= 64); 256 costs 2 KB per spriteinfo_t
+#define MAXFRAMENUM 64
+#else
 #define MAXFRAMENUM 256
+#endif
 
 //
 // A sprite definition:  a number of animation frames.
