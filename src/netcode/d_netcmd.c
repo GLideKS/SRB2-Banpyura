@@ -1019,7 +1019,7 @@ boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 		return false; // Empty or too long.
 	if (name[0] == ' ' || name[strlen(name)-1] == ' ')
 		return false; // Starts or ends with a space.
-	if (isdigit(name[0]))
+	if (isdigit((unsigned char)name[0]))
 		return false; // Starts with a digit.
 	if (name[0] == '@' || name[0] == '~')
 		return false; // Starts with an admin symbol.
@@ -1032,7 +1032,7 @@ boolean EnsurePlayerNameIsGood(char *name, INT32 playernum)
 	// Also, anything over 0x80 is disallowed too, since compilers love to
 	// differ on whether they're printable characters or not.
 	for (ix = 0; name[ix] != '\0'; ix++)
-		if (!isprint(name[ix]) || name[ix] == ';' || (UINT8)(name[ix]) >= 0x80)
+		if (!isprint((unsigned char)name[ix]) || name[ix] == ';' || (UINT8)(name[ix]) >= 0x80)
 			return false;
 
 	// Check if a player is currently using the name, case-insensitively.
@@ -1110,7 +1110,7 @@ void CleanupPlayerName(INT32 playernum, const char *newname)
 		if (strlen(p) == 0)
 			break; // empty names not allowed
 
-		if (isdigit(*p))
+		if (isdigit((unsigned char)*p))
 			break; // names starting with digits not allowed
 
 		if (*p == '@' || *p == '~')
@@ -1121,7 +1121,7 @@ void CleanupPlayerName(INT32 playernum, const char *newname)
 		do
 		{
 			/* from EnsurePlayerNameIsGood */
-			if (!isprint(*p) || *p == ';' || (UINT8)*p >= 0x80)
+			if (!isprint((unsigned char)*p) || *p == ';' || (UINT8)*p >= 0x80)
 				break;
 		}
 		while (*++p) ;
@@ -2056,7 +2056,7 @@ static void Command_Map_f(void)
 		if (newgametype == -1) // reached end of the list with no match
 		{
 			/* Did they give us a gametype number? That's okay too! */
-			if (isdigit(gametypename[0]))
+			if (isdigit((unsigned char)gametypename[0]))
 			{
 				d = atoi(gametypename);
 				if (d >= 0 && d < gametypecount)
@@ -3347,7 +3347,7 @@ static void Command_MotD_f(void)
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; mymotd[i] != '\0'; i++)
-		if (!isprint(mymotd[i]) || mymotd[i] == ';')
+		if (!isprint((unsigned char)mymotd[i]) || mymotd[i] == ';')
 		{
 			Z_Free(mymotd);
 			return;
@@ -3374,7 +3374,7 @@ static void Got_MotD_f(UINT8 **cp, INT32 playernum)
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; mymotd[i] != '\0'; i++)
-		if (!isprint(mymotd[i]) || mymotd[i] == ';')
+		if (!isprint((unsigned char)mymotd[i]) || mymotd[i] == ';')
 			kick = true;
 
 	if ((playernum != serverplayer && !IsPlayerAdmin(playernum)) || kick)
@@ -3570,7 +3570,7 @@ static void Command_Addfile(void)
 
 		// Disallow non-printing characters and semicolons.
 		for (i = 0; fn[i] != '\0'; i++)
-			if (!isprint(fn[i]) || fn[i] == ';')
+			if (!isprint((unsigned char)fn[i]) || fn[i] == ';')
 			{
 				AddedFilesClearList(&addedfiles);
 				return;
@@ -3682,7 +3682,7 @@ static void Command_Addfilelocal(void)
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; fn[i] != '\0'; i++)
-		if (!isprint(fn[i]) || fn[i] == ';')
+		if (!isprint((unsigned char)fn[i]) || fn[i] == ';')
 			return;
 
 	// Add any wad file, ignoring checks for if it contains complex things like
@@ -3726,7 +3726,7 @@ static void Command_Addfolder(void)
 
 		// Disallow non-printing characters and semicolons.
 		for (i = 0; fn[i] != '\0'; i++)
-			if (!isprint(fn[i]) || fn[i] == ';')
+			if (!isprint((unsigned char)fn[i]) || fn[i] == ';')
 			{
 				AddedFilesClearList(&addedfolders);
 				return;
@@ -3833,7 +3833,7 @@ static void Command_Addfolderlocal(void)
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; fn[i] != '\0'; i++)
-		if (!isprint(fn[i]) || fn[i] == ';')
+		if (!isprint((unsigned char)fn[i]) || fn[i] == ';')
 			return;
 
 	P_AddFolderLocal(fn);
@@ -3857,7 +3857,7 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; filename[i] != '\0'; i++)
-		if (!isprint(filename[i]) || filename[i] == ';')
+		if (!isprint((unsigned char)filename[i]) || filename[i] == ';')
 			kick = true;
 
 	if ((playernum != serverplayer && !IsPlayerAdmin(playernum)) || kick)
@@ -3874,16 +3874,16 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 
 	if (ncs != FS_FOUND || toomany)
 	{
-		char message[256];
+		char message[sizeof filename + 64];
 
 		if (toomany)
-			sprintf(message, M_GetText("Too many files loaded to add %s\n"), filename);
+			snprintf(message, sizeof message, M_GetText("Too many files loaded to add %s\n"), filename);
 		else if (ncs == FS_NOTFOUND)
-			sprintf(message, M_GetText("The server doesn't have %s\n"), filename);
+			snprintf(message, sizeof message, M_GetText("The server doesn't have %s\n"), filename);
 		else if (ncs == FS_MD5SUMBAD)
-			sprintf(message, M_GetText("Checksum mismatch on %s\n"), filename);
+			snprintf(message, sizeof message, M_GetText("Checksum mismatch on %s\n"), filename);
 		else
-			sprintf(message, M_GetText("Unknown error finding wad file (%s)\n"), filename);
+			snprintf(message, sizeof message, M_GetText("Unknown error finding wad file (%s)\n"), filename);
 
 		CONS_Printf("%s",message);
 
@@ -3915,7 +3915,7 @@ static void Got_RequestAddfoldercmd(UINT8 **cp, INT32 playernum)
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; path[i] != '\0'; i++)
-		if (!isprint(path[i]) || path[i] == ';')
+		if (!isprint((unsigned char)path[i]) || path[i] == ';')
 			kick = true;
 
 	if ((playernum != serverplayer && !IsPlayerAdmin(playernum)) || kick)
@@ -3932,14 +3932,14 @@ static void Got_RequestAddfoldercmd(UINT8 **cp, INT32 playernum)
 
 	if (ncs != FS_FOUND || toomany)
 	{
-		char message[256];
+		char message[sizeof path + 64];
 
 		if (toomany)
-			sprintf(message, M_GetText("Too many files loaded to add %s\n"), path);
+			snprintf(message, sizeof message, M_GetText("Too many files loaded to add %s\n"), path);
 		else if (ncs == FS_NOTFOUND)
-			sprintf(message, M_GetText("The server doesn't have %s\n"), path);
+			snprintf(message, sizeof message, M_GetText("The server doesn't have %s\n"), path);
 		else
-			sprintf(message, M_GetText("Unknown error finding folder (%s)\n"), path);
+			snprintf(message, sizeof message, M_GetText("Unknown error finding folder (%s)\n"), path);
 
 		CONS_Printf("%s",message);
 

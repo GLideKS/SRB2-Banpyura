@@ -2367,9 +2367,11 @@ void Nextmap_OnChange(void)
 {
 	gamedata_t *data = clientGamedata;
 	char *leveltitle;
-	char tabase[256];
+	// Room for the full home, replay folder, MAPXX and skin name without truncating the path.
+	char tabase[sizeof srb2home + sizeof timeattackfolder + sizeof skins[0]->name
+		+ sizeof(PATHSEP "replay" PATHSEP "MAPXX" PATHSEP "-")];
 #ifdef OLDNREPLAYNAME
-	char tabaseold[256];
+	char tabaseold[sizeof tabase];
 #endif
 	short i;
 	boolean active;

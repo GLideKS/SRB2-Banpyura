@@ -2389,7 +2389,7 @@ int M_JumpWord(const char *line)
 		return strspn(line, PUNCTUATION);
 	else
 	{
-		if (isspace(line[1]))
+		if (isspace((unsigned char)line[1]))
 			return 1 + strspn(&line[1], " ");
 		else
 			return strcspn(line, " "PUNCTUATION);
@@ -2446,7 +2446,7 @@ boolean M_IsStringEmpty(const char *s)
 	{
 		if (!(*ch))
 			break;
-		if (!isspace((*ch)))
+		if (!isspace((unsigned char)*ch))
 			return false;
 	}
 

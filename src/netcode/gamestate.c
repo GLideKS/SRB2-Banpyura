@@ -158,7 +158,7 @@ boolean CL_LoadReceivedSavegame(boolean reloading)
 {
 	save_t savebuffer;
 	size_t decompressedlen;
-	char tmpsave[256];
+	char tmpsave[sizeof srb2home + sizeof(PATHSEP TMPSAVENAME) - 1];
 	boolean succeeded = true;
 
 	FreeFileNeeded();
@@ -305,7 +305,7 @@ void PT_WillResendGamestate(SINT8 node)
 {
 	(void)node;
 
-	char tmpsave[256];
+	char tmpsave[sizeof srb2home + sizeof(PATHSEP TMPSAVENAME) - 1];
 
 	if (server || cl_redownloadinggamestate)
 		return;

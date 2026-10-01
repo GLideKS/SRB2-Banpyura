@@ -530,7 +530,7 @@ static void DEH_LoadDehackedFile(MYFILE *f, boolean mainfile)
 				}
 				else if (fastcmp(word, "SRB2"))
 				{
-					if (isdigit(word2[0]))
+					if (isdigit((unsigned char)word2[0]))
 					{
 						i = atoi(word2);
 						if (i != PATCHVERSION)

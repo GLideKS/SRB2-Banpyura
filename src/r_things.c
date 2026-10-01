@@ -319,7 +319,7 @@ static boolean GetSingleFrameAndRotation(
 	strlcpy(framepart, name, framelen + 1);
 
 	for (size_t i = 0; i < framelen; i++)
-		if (!isdigit(framepart[i]))
+		if (!isdigit((unsigned char)framepart[i]))
 			return false;
 
 	*ret_frame = atoi(framepart);

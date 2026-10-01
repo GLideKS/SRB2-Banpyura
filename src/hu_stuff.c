@@ -513,7 +513,7 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 	// If over DEDI_MAXMSGLEN, notify them and bail!
 	if (dedicated && (flags & HU_SERVER_SAY) && strlen(msg) > DEDI_MAXMSGLEN)
 	{
-		CONS_Printf("NOTICE: Too long, not sending! (max: %i, length: %lu)\n", DEDI_MAXMSGLEN, strlen(msg));
+		CONS_Printf("NOTICE: Too long, not sending! (max: %i, length: %zu)\n", DEDI_MAXMSGLEN, strlen(msg));
 		return;
 	}
 
@@ -982,7 +982,7 @@ static void HU_sendChatMessage(void)
 
 		strncpy(playernum, msg+3, sizeof(playernum)-1);
 		// check for undesirable characters in our "number"
-		if (!(isdigit(playernum[0]) && isdigit(playernum[1])))
+		if (!(isdigit((unsigned char)playernum[0]) && isdigit((unsigned char)playernum[1])))
 		{
 			// check if playernum[1] is a space
 			if (playernum[1] == ' ')

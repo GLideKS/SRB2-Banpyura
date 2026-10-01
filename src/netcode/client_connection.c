@@ -1917,7 +1917,7 @@ void CL_ConnectToServer(void)
 	INT32 pnumnodes, nodewaited = doomcom->numnodes, i;
 	tic_t oldtic;
 	tic_t asksent;
-	char tmpsave[256];
+	char tmpsave[sizeof srb2home + sizeof(PATHSEP TMPSAVENAME) - 1];
 
 	sprintf(tmpsave, "%s" PATHSEP TMPSAVENAME, srb2home);
 
