@@ -1,6 +1,6 @@
 include(clang-tidy-default)
 
-add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
+set(SRB2_ENGINE_SOURCES
 	comptime.c
 	md5.c
 	config.h.in
@@ -108,6 +108,42 @@ add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32
 	lua_httplib.c
 )
 
+if(SRB2_CONFIG_PS2PROFILE)
+	list(FILTER SRB2_ENGINE_SOURCES EXCLUDE REGEX "^(lua_.*|deh_lua)\\.c$")
+	list(APPEND SRB2_ENGINE_SOURCES ps2/lua_stub.c ps2/soc_numbers.c ps2/net_stub.c w_pack.c)
+endif()
+add_executable(SRB2SDL2 MACOSX_BUNDLE WIN32 ${SRB2_ENGINE_SOURCES})
+
+if(SRB2_CONFIG_PS2PROFILE)
+	target_compile_definitions(SRB2SDL2 PRIVATE PS2_PROFILE NOHW NOMD5 NOMUMBLE NO_IPV6 NOUPNP)
+	# Prefer the existing host dependency; alternatively compile an external LZ4
+	# source into an isolated host library (never link the SDK's EE library).
+	set(SRB2_HOST_PROFILE_LZ4_SOURCE "" CACHE FILEPATH "External lz4.c to compile for the host profile")
+	set(SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR "" CACHE PATH "LZ4 headers for the host profile")
+	if(SRB2_HOST_PROFILE_LZ4_SOURCE)
+		if(NOT EXISTS "${SRB2_HOST_PROFILE_LZ4_SOURCE}")
+			message(FATAL_ERROR "SRB2_HOST_PROFILE_LZ4_SOURCE does not exist")
+		endif()
+		if(NOT SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR)
+			get_filename_component(SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR "${SRB2_HOST_PROFILE_LZ4_SOURCE}" DIRECTORY)
+		endif()
+		add_library(SRB2HostProfileLZ4 STATIC "${SRB2_HOST_PROFILE_LZ4_SOURCE}")
+		target_include_directories(SRB2HostProfileLZ4 PRIVATE "${SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR}")
+		# SDK ports/include also contains target-only zlib/png headers. Keep
+		# this fallback local to the pack reader rather than the whole engine.
+		set_property(SOURCE w_pack.c APPEND PROPERTY INCLUDE_DIRECTORIES "${SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR}")
+		target_link_libraries(SRB2SDL2 PRIVATE SRB2HostProfileLZ4)
+	else()
+		if(NOT SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR)
+			find_path(SRB2_HOST_PROFILE_LZ4_HEADERS NAMES lz4.h REQUIRED)
+			set(SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR "${SRB2_HOST_PROFILE_LZ4_HEADERS}")
+		endif()
+		find_library(SRB2_HOST_PROFILE_LZ4_LIBRARY NAMES lz4 REQUIRED)
+		target_include_directories(SRB2SDL2 PRIVATE "${SRB2_HOST_PROFILE_LZ4_INCLUDE_DIR}")
+		target_link_libraries(SRB2SDL2 PRIVATE "${SRB2_HOST_PROFILE_LZ4_LIBRARY}")
+	endif()
+endif()
+
 # This updates the modification time for comptime.c at the
 # end of building so when the build system is ran next time,
 # that file gets flagged. comptime.c will always be rebuilt.
@@ -161,8 +197,16 @@ target_compile_features(SRB2SDL2 PRIVATE c_std_23 cxx_std_17)
 set(SRB2_CONFIG_DEV_BUILD OFF CACHE BOOL
 	"Compile a development build of SRB2.")
 
-add_subdirectory(blua)
-add_subdirectory(netcode)
+if(SRB2_CONFIG_PS2PROFILE)
+	# Keep local loopback/game protocol, replace remote transports and transfers.
+	target_sources(SRB2SDL2 PRIVATE
+		netcode/d_clisrv.c netcode/server_connection.c netcode/client_connection.c
+		netcode/tic_command.c netcode/net_command.c netcode/gamestate.c
+		netcode/commands.c netcode/d_net.c netcode/d_netcmd.c)
+else()
+	add_subdirectory(blua)
+	add_subdirectory(netcode)
+endif()
 
 # OS macros
 if (UNIX)
@@ -418,6 +462,17 @@ if(SRB2_CONFIG_PROFILEMODE AND "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 add_subdirectory(sdl)
+if(SRB2_CONFIG_PS2PROFILE)
+	# SDL's socket bootstrap duplicates the platform net stub.
+	get_target_property(SRB2_HOST_PROFILE_SOURCES SRB2SDL2 SOURCES)
+	list(FILTER SRB2_HOST_PROFILE_SOURCES EXCLUDE REGEX "(^|/)sdl/i_net\\.c$")
+	set_property(TARGET SRB2SDL2 PROPERTY SOURCES ${SRB2_HOST_PROFILE_SOURCES})
+	# SDL's stock locator searches for pk3 even though this profile loads packs.
+	# Rename that entry point locally and supply the native pack locator adapter.
+	set_property(SOURCE sdl/i_system.c APPEND PROPERTY COMPILE_DEFINITIONS I_LocateWad=I_LocateWadPK3)
+	target_sources(SRB2SDL2 PRIVATE ../tools/ps2/build_host_profile_wad.c)
+	target_include_directories(SRB2SDL2 PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
 
 if(TARGET ZLIB::ZLIB)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_ZLIB)
@@ -464,7 +519,7 @@ else()
 	message(STATUS "No libopenmpt Found")
 endif()
 
-if(TARGET CURL::libcurl)
+if(TARGET CURL::libcurl AND NOT SRB2_CONFIG_PS2PROFILE)
 	target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_CURL)
 	target_link_libraries(SRB2SDL2 PRIVATE CURL::libcurl)
 	message(STATUS "libcurl Found")
@@ -472,7 +527,7 @@ else()
 	message(STATUS "No libcurl Found")
 endif()
 
-if(TARGET miniupnpc::miniupnpc)
+if(TARGET miniupnpc::miniupnpc AND NOT SRB2_CONFIG_PS2PROFILE)
 	if("${VCPKG_TARGET_TRIPLET}" MATCHES "-mingw-static$")
 		target_compile_definitions(SRB2SDL2 PRIVATE -DHAVE_MINIUPNPC -DMINIUPNP_STATICLIB)
 		target_link_libraries(SRB2SDL2 PRIVATE miniupnpc::miniupnpc -liphlpapi)
