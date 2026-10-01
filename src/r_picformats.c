@@ -52,7 +52,13 @@
 #endif
 
 #ifdef PICTURE_PNG_USELOOKUP
+#ifdef PS2_PROFILE
+// PS2-11: 128 KB nearest-colour memo, allocated on use as PU_CACHE (rebuilt when evicted; the memo is deterministic)
+static colorlookup_t *png_colorlookupp;
+#define png_colorlookup (*png_colorlookupp)
+#else
 static colorlookup_t png_colorlookup;
+#endif
 #endif
 
 /** Converts a picture between two formats.
@@ -1224,7 +1230,13 @@ void *Picture_PNGConvert(
 
 #ifdef PICTURE_PNG_USELOOKUP
 	if (outbpp != PICDEPTH_32BPP)
+	{
+#ifdef PS2_PROFILE
+		if (!png_colorlookupp)
+			Z_Calloc(sizeof *png_colorlookupp, PU_CACHE, &png_colorlookupp);
+#endif
 		InitColorLUT(&png_colorlookup, pMasterPalette, false);
+	}
 #endif
 
 	if (outbpp == PICDEPTH_32BPP)

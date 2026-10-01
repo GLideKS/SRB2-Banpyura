@@ -693,7 +693,13 @@ extracolormap_t *R_ColormapForName(char *name)
 //
 static double deltas[256][3], map[256][3];
 
+#ifdef PS2_PROFILE
+// PS2-11: 128 KB nearest-colour memo, allocated on use as PU_CACHE (rebuilt when evicted; the memo is deterministic)
+static colorlookup_t *lighttable_lutp;
+#define lighttable_lut (*lighttable_lutp)
+#else
 static colorlookup_t lighttable_lut;
+#endif
 
 static UINT8 LightTableNearest(UINT8 r, UINT8 g, UINT8 b)
 {
@@ -774,6 +780,10 @@ void R_GenerateLightTable(extracolormap_t *extra_colormap, boolean uselookup)
 
 		if (uselookup)
 		{
+#ifdef PS2_PROFILE
+			if (!lighttable_lutp)
+				Z_Calloc(sizeof *lighttable_lutp, PU_CACHE, &lighttable_lutp);
+#endif
 			InitColorLUT(&lighttable_lut, pMasterPalette, false);
 			NearestColorFunc = LightTableNearest_LUT;
 		}

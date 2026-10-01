@@ -22,6 +22,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "m_misc.h"
+#include "m_argv.h"
 #include "w_wad.h"
 #include "z_zone.h"
 #include "console.h" // Until buffering gets finished
@@ -144,6 +145,36 @@ CV_PossibleValue_t Color_cons_t[MAXSKINCOLORS+1];
 
 /** \brief Initializes the translucency tables used by the Software renderer.
 */
+#ifdef PS2_PROFILE
+// PS2-11: the 9 TRANSx0 tables and the 31 generated blend tables (2.6 MB together) are loaded/generated on
+// first use, one 64 KiB table at a time, by the same code from the same inputs as the original startup pass.
+static RGBA_t blendpal[256]; // master palette at R_InitTranslucencyTables: what the original built every table from
+static UINT8 *transtab_lazy[NUMTRANSTABLES];
+static UINT8 *blendtab_lazy[NUMBLENDMAPS][NUMTRANSTABLES+1];
+static colorlookup_t *transtab_lutp; // canonical eager-order nearest-colour memo, PU_STATIC once warmed
+#define transtab_lut (*transtab_lutp)
+static void R_BlendSelfTest(void);
+
+void R_InitTranslucencyTables(void)
+{
+	memcpy(blendpal, pMasterPalette, sizeof blendpal);
+	if (M_CheckParm("-blendtest"))
+		R_BlendSelfTest();
+}
+
+static UINT8 *R_LazyTransTable(INT32 level)
+{
+	if (!transtab_lazy[level])
+	{
+		char name[8];
+		UINT8 *table = Z_MallocAlign(0x10000, PU_STATIC, NULL, 16);
+		snprintf(name, sizeof name, "TRANS%d0", (int)level + 1);
+		W_ReadLump(W_GetNumForName(name), table);
+		transtab_lazy[level] = table;
+	}
+	return transtab_lazy[level];
+}
+#else
 void R_InitTranslucencyTables(void)
 {
 	// Load here the transparency lookup tables 'TRANSx0'
@@ -164,6 +195,7 @@ void R_InitTranslucencyTables(void)
 }
 
 static colorlookup_t transtab_lut;
+#endif
 
 static void BlendTab_Translucent(UINT8 *table, int style, UINT8 blendamt)
 {
@@ -273,6 +305,54 @@ static void BlendTab_GenerateMaps(INT32 tab, INT32 style, void (*genfunc)(UINT8 
 	}
 }
 
+#ifdef PS2_PROFILE
+static void BlendTab_GenerateOne(UINT8 *table, INT32 tab, INT32 i)
+{
+	const float amtmul = (256.0f / (float)(NUMTRANSTABLES + 1));
+	const UINT16 alpha = min(amtmul * i, 0xFF);
+
+	switch (tab)
+	{
+		case blendtab_add:
+			BlendTab_Translucent(table, AST_ADD, alpha);
+			break;
+		case blendtab_subtract:
+			BlendTab_Subtractive(table, AST_SUBTRACT, alpha);
+			break;
+		case blendtab_reversesubtract:
+			BlendTab_Translucent(table, AST_REVERSESUBTRACT, alpha);
+			break;
+		default:
+			BlendTab_Modulative(table);
+			break;
+	}
+}
+
+// GetColorLUT caches the first RGB encountered in each RGB565 bucket, not a canonical bucket colour.
+// Replay the original eager order (add, subtract, reverse subtract, modulate; ascending levels) into one
+// reusable scratch table before serving any lazy request. Keep the resulting LUT static: eviction followed
+// by a different first request would change initialized table bytes. No blend tables are retained by warm-up.
+static void BlendTab_NeedLUT(void)
+{
+	if (!transtab_lutp)
+	{
+		RGBA_t *savedpal = pMasterPalette;
+		UINT8 *scratch;
+		INT32 tab, i;
+
+		Z_Calloc(sizeof *transtab_lutp, PU_STATIC, &transtab_lutp);
+		InitColorLUT(&transtab_lut, blendpal, false);
+		scratch = Z_Malloc(0x10000, PU_STATIC, NULL);
+		pMasterPalette = blendpal;
+		for (tab = 0; tab < NUMBLENDMAPS; tab++)
+			for (i = 0; i < BlendTab_Count[tab]; i++)
+				BlendTab_GenerateOne(scratch, tab, i);
+		pMasterPalette = savedpal;
+		Z_Free(scratch);
+	}
+}
+#endif
+
 void R_GenerateBlendTables(void)
 {
 	INT32 i;
@@ -280,7 +360,14 @@ void R_GenerateBlendTables(void)
 	for (i = 0; i < NUMBLENDMAPS; i++)
 		blendtables[i] = Z_MallocAlign(BlendTab_Count[i] * 0x10000, PU_STATIC, NULL, 16);
 
+#ifdef PS2_PROFILE
+	// Also used by -blendtest with an independent, initially empty LUT.
+	if (!transtab_lutp)
+		Z_Calloc(sizeof *transtab_lutp, PU_STATIC, &transtab_lutp);
+	InitColorLUT(&transtab_lut, blendpal, false);
+#else
 	InitColorLUT(&transtab_lut, pMasterPalette, false);
+#endif
 
 	// Additive
 	BlendTab_GenerateMaps(blendtab_add, AST_ADD, BlendTab_Translucent);
@@ -302,18 +389,102 @@ void R_GenerateBlendTables(void)
 #define ClipBlendLevel(style, trans) max(min((trans), BlendTab_Count[BlendTab_FromStyle[style]]-1), 0)
 #define ClipTransLevel(trans) max(min((trans), NUMTRANSMAPS-2), 0)
 
+#ifdef PS2_PROFILE
+// One lazily generated 64 KiB blend table: the original loop body of BlendTab_GenerateMaps for index i.
+static UINT8 *R_LazyBlendTable(INT32 tab, INT32 i)
+{
+	UINT8 **slot = &blendtab_lazy[tab][i];
+
+	if (!*slot)
+	{
+		RGBA_t *savedpal = pMasterPalette;
+		UINT8 *table = Z_MallocAlign(0x10000, PU_STATIC, NULL, 16);
+
+		pMasterPalette = blendpal; // V_GetMasterColor inside the generators reads this
+		BlendTab_NeedLUT();
+		BlendTab_GenerateOne(table, tab, i);
+		pMasterPalette = savedpal;
+		*slot = table;
+	}
+	return *slot;
+}
+
+// -blendtest: compare initialized bytes against an independent original eager pass. The original generators
+// leave foreground/background index 255 unwritten (511 bytes per table); retain that behavior and exclude
+// only those inherited undefined bytes, rather than comparing allocator contents or inventing new rows.
+static void R_BlendSelfTest(void)
+{
+	RGBA_t *savedpal = pMasterPalette;
+	colorlookup_t *savedlut = transtab_lutp;
+	INT32 tab, i, bg, bad = 0, total = 0;
+
+	transtab_lutp = NULL;
+	pMasterPalette = blendpal;
+	R_GenerateBlendTables(); // the original eager pass, into blendtables[]
+	pMasterPalette = savedpal;
+	Z_Free(transtab_lutp);
+	transtab_lutp = savedlut;
+	for (tab = 0; tab < NUMBLENDMAPS; tab++)
+		for (i = 0; i < BlendTab_Count[tab]; i++)
+		{
+			UINT8 *lazy = R_LazyBlendTable(tab, i);
+			UINT8 *eager = blendtables[tab] + 0x10000 * i;
+			total++;
+			for (bg = 0; bg < 0xFF; bg++)
+			{
+				if (memcmp(lazy + 0x100 * bg, eager + 0x100 * bg, 0xFF))
+				{
+					bad++;
+					CONS_Printf("blendtest: table %d/%d DIFFERS\n", (int)tab, (int)i);
+					break;
+				}
+			}
+		}
+	for (tab = 0; tab < NUMBLENDMAPS; tab++)
+	{
+		Z_Free(blendtables[tab]);
+		blendtables[tab] = NULL;
+	}
+	CONS_Printf("blendtest: %d tables, %d differences (index 255 edges excluded)\n", (int)total, (int)bad);
+}
+#endif
+
 UINT8 *R_GetTranslucencyTable(INT32 alphalevel)
 {
+#ifdef PS2_PROFILE
+	return R_LazyTransTable(ClipTransLevel(alphalevel-1));
+#else
 	return transtables + (ClipTransLevel(alphalevel-1) << FF_TRANSSHIFT);
+#endif
 }
 
 UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 {
+#ifndef PS2_PROFILE
 	size_t offs;
+#endif
 
 	if (style <= AST_COPY || style >= AST_OVERLAY)
 		return NULL;
 
+#ifdef PS2_PROFILE
+	switch (style)
+	{
+		case AST_ADD:
+			return R_LazyBlendTable(blendtab_add, ClipBlendLevel(style, alphalevel));
+		case AST_SUBTRACT:
+			return R_LazyBlendTable(blendtab_subtract, ClipBlendLevel(style, alphalevel));
+		case AST_REVERSESUBTRACT:
+			return R_LazyBlendTable(blendtab_reversesubtract, ClipBlendLevel(style, alphalevel));
+		case AST_MODULATE:
+			return R_LazyBlendTable(blendtab_modulate, 0);
+		default:
+			break;
+	}
+
+	if (--alphalevel >= 0)
+		return R_LazyTransTable(ClipTransLevel(alphalevel));
+#else
 	offs = (ClipBlendLevel(style, alphalevel) << FF_TRANSSHIFT);
 
 	// Lactozilla: Returns the equivalent to AST_TRANSLUCENT
@@ -335,6 +506,7 @@ UINT8 *R_GetBlendTable(int style, INT32 alphalevel)
 	// Return a normal translucency table
 	if (--alphalevel >= 0)
 		return transtables + (ClipTransLevel(alphalevel) << FF_TRANSSHIFT);
+#endif
 	else
 		return NULL;
 }
