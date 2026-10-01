@@ -1179,7 +1179,12 @@ typedef enum playersprite
 	SPR2_XTRA, // stuff that isn't in-map - "would this ever need an md2 or variable length animation?"
 
 	SPR2_FIRSTFREESLOT,
+#ifdef PS2_PROFILE
+	// Vanilla data uses no sprite2 freeslots; every skin_t carries NUMPLAYERSPRITES-sized tables (4.2 MB each at 1025)
+	SPR2_LASTFREESLOT = SPR2_FIRSTFREESLOT + 7,
+#else
 	SPR2_LASTFREESLOT = 1024, // Do not make higher than SPR2F_MASK (currently 0x3FF) plus one
+#endif
 	NUMPLAYERSPRITES
 } playersprite_t;
 

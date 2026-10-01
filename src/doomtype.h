@@ -58,8 +58,14 @@ typedef long ssize_t;
 #define UINT16 uint16_t
 #define INT16 int16_t
 
+#ifdef PS2
+// newlib's int32_t is long on the EE; use int like every other 32-bit-int target (printf formats)
+#define INT32 int
+#define UINT32 unsigned int
+#else
 #define INT32 int32_t
 #define UINT32 uint32_t
+#endif
 #define INT64  int64_t
 #define UINT64 uint64_t
 #endif

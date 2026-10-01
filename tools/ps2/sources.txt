@@ -94,9 +94,11 @@ src/netcode/d_netcmd.c
 src/ps2/i_main.c
 src/ps2/i_system.c
 src/ps2/i_video.c
+src/ps2/ps2_gs.c
 src/ps2/i_sound.c
 src/ps2/i_joy.c
 src/ps2/lua_stub.c
 src/ps2/soc_numbers.c
 src/ps2/net_stub.c
 src/ps2/ps2_boot.c
+src/ps2/ps2_padmap.c

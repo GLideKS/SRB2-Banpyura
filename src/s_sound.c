@@ -2146,7 +2146,12 @@ static boolean S_LoadMusic(const char *mname)
 	}
 
 	// load & register it
+#ifdef PS2_PROFILE
+	// The music lump (up to 4 MB) is not cached: the PS2 player streams it from the pack.
+	mdata = NULL;
+#else
 	mdata = W_CacheLumpNum(mlumpnum, PU_MUSIC);
+#endif
 
 
 	if (I_LoadSong(mdata, W_LumpLength(mlumpnum)))
@@ -2167,7 +2172,7 @@ static void S_UnloadMusic(void)
 {
 	I_UnloadSong();
 
-#ifndef HAVE_SDL //SDL uses RWOPS
+#if !defined(HAVE_SDL) && !defined(PS2_PROFILE) //SDL uses RWOPS
 	Z_ChangeTag(music_data, PU_CACHE);
 #endif
 	music_data = NULL;

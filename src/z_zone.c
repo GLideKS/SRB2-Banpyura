@@ -59,6 +59,9 @@ typedef struct memblock_s
 
 	size_t size; // including the header and blocks
 	size_t realsize; // size of real data only
+#ifdef PS2
+	void *raw; // pointer returned by malloc (payload is aligned inside it)
+#endif
 
 #ifdef ZDEBUG
 	const char *ownerfile;
@@ -66,7 +69,12 @@ typedef struct memblock_s
 #endif
 
 	struct memblock_s *next, *prev;
-} memblock_t;
+}
+#ifdef PS2
+// 16-byte header and payload: the R5900 faults on unaligned ld/sd (INT64, double)
+__attribute__((aligned(16)))
+#endif
+memblock_t;
 
 #define MEMORY(x) (void *)((uintptr_t)(x) + sizeof(memblock_t))
 #define MEMBLOCK(x) (memblock_t *)((uintptr_t)(x) - sizeof(memblock_t))
@@ -80,6 +88,50 @@ static memblock_t head;
 static void Command_Memfree_f(void);
 #ifdef ZDEBUG
 static void Command_Memdump_f(void);
+#endif
+
+#if defined(ZDEBUG) && defined(PS2)
+/** Prints the biggest allocation sites (file:line) with their block count and bytes. */
+void Z_DumpOwners(size_t top)
+{
+	enum { MAXOWN = 256 };
+	static struct { const char *file; INT32 line; size_t bytes, count; } own[MAXOWN];
+	size_t used = 0, i, j;
+	memblock_t *block;
+
+	for (block = head.next; block != &head; block = block->next)
+	{
+		for (i = 0; i < used; i++)
+			if (own[i].file == block->ownerfile && own[i].line == block->ownerline)
+				break;
+		if (i == used)
+		{
+			if (used == MAXOWN)
+				continue;
+			own[used].file = block->ownerfile;
+			own[used].line = block->ownerline;
+			own[used].bytes = own[used].count = 0;
+			used++;
+		}
+		own[i].bytes += block->realsize;
+		own[i].count++;
+	}
+	for (j = 0; j < top && j < used; j++)
+	{
+		size_t best = j;
+		for (i = j + 1; i < used; i++)
+			if (own[i].bytes > own[best].bytes)
+				best = i;
+		if (best != j)
+		{
+			typeof(own[0]) t = own[j];
+			own[j] = own[best];
+			own[best] = t;
+		}
+		CONS_Printf("OOM: owner %s:%d  %lu B in %lu blocks\n", own[j].file ? own[j].file : "?", (int)own[j].line,
+			(unsigned long)own[j].bytes, (unsigned long)own[j].count);
+	}
+}
 #endif
 
 // --------------------------
@@ -167,7 +219,11 @@ void Z_Free(void *ptr)
 #endif
 	block->prev->next = block->next;
 	block->next->prev = block->prev;
+#ifdef PS2
+	free(block->raw);
+#else
 	free(block);
+#endif
 }
 
 /** malloc() that doesn't accept failure.
@@ -182,16 +238,31 @@ static void *xm(size_t size)
 
 	if (padedsize < size)/* overflow check */
 		I_Error("You are allocating memory too large!");
+#ifdef PS2
+	p = malloc(padedsize + 64);
+#else
 	p = malloc(padedsize);
+#endif
 
 	if (p == NULL)
 	{
 		// Oh crumbs: we're out of heap. Try purging the cache and reallocating.
 		Z_FreeTags(PU_PURGELEVEL, INT32_MAX);
+#ifdef PS2
+		p = malloc(padedsize + 64);
+#else
 		p = malloc(padedsize);
+#endif
 
 		if (p == NULL)
 		{
+#ifdef PS2
+			{
+				// OOM report: zone usage by tag and what newlib still has
+				extern void PS2_ReportOOM(void);
+				PS2_ReportOOM();
+			}
+#endif
 			I_Error("Out of memory allocating %s bytes", sizeu1(size));
 		}
 	}
@@ -226,7 +297,18 @@ void *Z_MallocAlign(size_t size, INT32 tag, void *user, INT32 alignbits)
 	CONS_Debug(DBG_MEMORY, "Z_Malloc %s:%d\n", file, line);
 #endif
 
+#ifdef PS2
+	{
+		// 16-byte aligned payload; blocks >= 2 KiB (lumps read by DMA) are 64-byte aligned
+		void *raw = xm(sizeof (memblock_t) + size);
+		uintptr_t align = (size >= 2048) ? 64 : 16;
+		uintptr_t payload = ((uintptr_t)raw + sizeof (memblock_t) + align - 1) & ~(align - 1);
+		block = MEMBLOCK(payload);
+		block->raw = raw;
+	}
+#else
 	block = xm(sizeof (memblock_t) + size);
+#endif
 	ptr = MEMORY(block);
 	I_Assert((intptr_t)ptr % sizeof (void *) == 0);
 

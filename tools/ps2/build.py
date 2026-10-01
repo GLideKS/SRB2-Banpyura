@@ -27,7 +27,8 @@ ENV = dict(os.environ, PS2DEV=str(DEV), PS2SDK=str(SDK))
 ENV['PATH'] = ';'.join(str(p) for p in [DEV/'ee/bin', DEV/'iop/bin', DEV/'bin',
                                          Path('C:/Windows/System32'), Path('C:/Windows')])
 
-DEFS = ['-D_EE', '-DPS2', '-DPS2_PROFILE', '-DNOHW', '-DNOMD5', '-DNO_PNG_LUMPS',
+DEFS = ['-D_EE', '-DPS2', '-DPS2_PROFILE', '-DNOHW', '-DNOMD5', '-DHAVE_PNG',  # bring-up scaffold (15 PNG lumps), replaced by cooked patches in phase 2
+        
         '-DNOMUMBLE', '-DNO_IPV6', '-DNOUPNP', '-DCMAKECONFIG', '-D_LARGEFILE64_SOURCE',
         '-DNOEXECINFO', '-DUNIXCOMMON', '-DHAVE_ZLIB']  # HAVE_ZLIB: bring-up scaffold for pk3, removed in phase 2
 WARN = ['-Wall', '-Wextra', '-Wno-trigraphs', '-Wno-unused-parameter', '-fwrapv']
@@ -38,7 +39,7 @@ INCS = ['-I' + str(ROOT/'src'), '-I' + str(ROOT/'src/ps2'), '-I' + str(GEN),
 LDFLAGS = ['-T' + str(SDK/'ee/startup/linkfile'), '-L' + str(SDK/'ee/lib'), '-L' + str(DEV/'gsKit/lib'),
            '-L' + str(SDK/'ports/lib'), '-Wl,-zmax-page-size=128', '-Wl,--defsym,_stack_size=0x80000',
            '-Wl,--gc-sections']
-LIBS = ['-lz', '-lgskit', '-ldmakit', '-laudsrv', '-lpad', '-lpoweroff', '-lfileXio', '-lcdvd',
+LIBS = ['-lps2_drivers', '-llibpng16_static', '-lz', '-lgskit', '-ldmakit', '-laudsrv', '-lpad', '-lpoweroff', '-lfileXio', '-lcdvd',
         '-ldebug', '-lpatches', '-lm']
 
 
@@ -61,9 +62,12 @@ def gen_config():
         p.write_text(text)
 
 
+EXTRA_SOURCES = []
+
+
 def sources(selected):
     lines = [l.split('#')[0].strip() for l in (ROOT/'tools/ps2/sources.txt').read_text().splitlines()]
-    srcs = [l for l in lines if l and (ROOT/l).exists()]  # files owned by other workers may not exist yet
+    srcs = [l for l in lines + EXTRA_SOURCES if l and (ROOT/l).exists()]  # files owned by other workers may not exist yet
     if selected:
         srcs = [s for s in srcs if s in selected]
     return srcs
@@ -108,8 +112,15 @@ def main():
     ap.add_argument('--jobs', type=int, default=os.cpu_count() or 4)
     ap.add_argument('--target', default='SRB2.ELF')
     ap.add_argument('--list-undefined', action='store_true')
+    ap.add_argument('--ps2ref', action='store_true', help='build the observational PS2REF hooks (tic log/frame dump); use SRB2_PS2_OUT=build/ps2-ref')
+    ap.add_argument('--zdebug', action='store_true', help='define ZDEBUG (zone owner tracking); use SRB2_PS2_OUT=build/ps2-zdebug')
     ap.add_argument('files', nargs='*')
     a = ap.parse_args()
+    if a.zdebug:
+        CFLAGS.append('-DZDEBUG')
+    if a.ps2ref:
+        CFLAGS.append('-DPS2REF')
+        EXTRA_SOURCES.append('src/ps2ref.c')
     OBJ.mkdir(parents=True, exist_ok=True)
     gen_config()
     flags = ' '.join(CFLAGS + INCS)
