@@ -41,6 +41,7 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - `addfilelocal` allows you to load addons locally. Can be accessed via Addons Menu and pressing Right Alt as well. (SRB2 Kart Saturn)
 - Fixed SRB2's loading time. (SRB2-Classic)
 - Minimum input delay and Gentleman's delay (Ring Racers)
+- Lifted netxcmd limits (SRB2-Classic)
 - `cam_centertoggle` and `cam2_centertoggle` are not exclusive to the Automatic playstyle.
 - Rejoin server menu with timestamps (Ring Racers)
 - Added total progress bar while downloading addons from a server.
