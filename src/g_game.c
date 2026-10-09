@@ -1804,7 +1804,6 @@ void G_BuildTiccmd(ticcmd_t *cmd, INT32 realtics, UINT8 ssplayer)
 		cmd->buttons |= BT_JUMP;
 
 	// player aiming shit, ahhhh...
-
 	INT32 player_invert = invertmouse ? -1 : 1;
 	INT32 screen_invert =
 		(player->mo && (player->mo->eflags & MFE_VERTICALFLIP)
