@@ -771,7 +771,7 @@ void M_SaveConfig(const char *filename, boolean forbanpyura)
 	}
 
 	// header message
-	fprintf(f, "// SRB2%sconfiguration file.\n", (forbanpyura ? "-bnp" : " "));
+	fprintf(f, "// SRB2%sconfiguration file.\n", (forbanpyura ? "-Banpyura " : " "));
 
 	if (!forbanpyura)
 	{
