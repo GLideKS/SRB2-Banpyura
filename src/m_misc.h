@@ -43,6 +43,8 @@ float M_GetMovieSize(void);
 
 // the file where game vars and settings are saved
 #define CONFIGFILENAME "config.cfg"
+// cvars with CV_CLIENT (if they have CV_SAVE) go here
+#define BANPCONFIGFILENAME "bnpconfig.cfg"
 
 // The file where we'll save the last IPs we joined
 #define IPLOGFILE "savedips.txt"
@@ -97,7 +99,7 @@ void Command_ChangeConfig_f(void);
 
 void M_FirstLoadConfig(void);
 // save game config: cvars, aliases..
-void M_SaveConfig(const char *filename);
+void M_SaveConfig(const char *filename, boolean forbanpyura);
 
 INT32 axtoi(const char *hexStg);
 
@@ -153,5 +155,6 @@ UINT32 FNV1a_HashString(const char *message);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+extern char bnpconfigfile[MAX_WADPATH];
 
 #endif

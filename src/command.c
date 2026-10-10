@@ -2765,13 +2765,26 @@ void CV_ClearChangedFlags(void)
   *
   * \param f File to save to.
   */
-void CV_SaveVariables(FILE *f)
+void CV_SaveVariables(FILE *f, boolean forbanpyura)
 {
 	consvar_t *cvar;
 
 	for (cvar = consvar_vars; cvar; cvar = cvar->next)
 		if (cvar->flags & CV_SAVE)
 		{
+			if (forbanpyura)
+			{
+				// Only save CV_CLIENT cvars
+				if ((cvar->flags & CV_CLIENT) == 0)
+					continue;
+			}
+			else
+			{
+				// Don't save CV_CLIENT cvars
+				if (cvar->flags & CV_CLIENT)
+					continue;
+			}
+			
 			char stringtowrite[MAXTEXTCMD+1];
 
 			const char * string;

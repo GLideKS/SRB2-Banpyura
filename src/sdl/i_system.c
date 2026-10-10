@@ -2509,7 +2509,8 @@ void I_Quit(void)
 	if (quiting) goto death;
 	SDLforceUngrabMouse();
 	quiting = SDL_FALSE;
-	M_SaveConfig(NULL); //save game config, cvars..
+	M_SaveConfig(NULL, false); //save game config, cvars..
+	M_SaveConfig(NULL, true);  //and save Banpyura's stuff...
 	M_SaveJoinedIPs(); // Not in dedicated because you shouldnt be able to connect there
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(clientGamedata); // Tails 12-08-2002
@@ -2601,7 +2602,8 @@ void I_Error(const char *error, ...)
 			SDL_Quit();
 		if (errorcount == 8)
 		{
-			M_SaveConfig(NULL);
+			M_SaveConfig(NULL, false);
+			M_SaveConfig(NULL, true);
 			G_SaveGameData(clientGamedata);
 		}
 		if (errorcount > 20)
@@ -2631,7 +2633,8 @@ void I_Error(const char *error, ...)
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 	// ---
 
-	M_SaveConfig(NULL); // save game config, cvars..
+	M_SaveConfig(NULL, false); // save game config, cvars..
+	M_SaveConfig(NULL, true); // hello Banpyura
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(clientGamedata); // Tails 12-08-2002
 
