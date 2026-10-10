@@ -2802,12 +2802,16 @@ static void ST_overlayDrawer(void)
 		if(!P_IsLocalPlayer(stplyr))
 		{
 			char name[MAXPLAYERNAME+1];
-			// shorten the name if its more than twelve characters.
-			strlcpy(name, player_names[stplyr-players], 13);
+			// shorten the name if its more than twenty four characters.
+			strlcpy(name, player_names[stplyr-players], 25);
 
 			// Show name of player being displayed
 			V_DrawCenteredString((BASEVIDWIDTH/6), BASEVIDHEIGHT-80, 0, M_GetText("Viewpoint:"));
-			V_DrawCenteredString((BASEVIDWIDTH/6), BASEVIDHEIGHT-64, V_ALLOWLOWERCASE, name);
+
+			if (strlen(name) <= 13)
+				V_DrawCenteredString((BASEVIDWIDTH/6), BASEVIDHEIGHT-64, V_ALLOWLOWERCASE, name);
+			else
+				V_DrawCenteredThinString((BASEVIDWIDTH/6), BASEVIDHEIGHT-64, V_ALLOWLOWERCASE, name);
 		}
 
 		// This is where we draw all the fun cheese if you have the chasecam off!
