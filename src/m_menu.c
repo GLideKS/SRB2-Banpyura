@@ -3353,21 +3353,6 @@ boolean M_Responder(event_t *ev)
 					case KEY_HAT1 + 3:
 						ch = KEY_RIGHTARROW;
 						break;
-					//Local Addon Mode
-					case LOCALMODE_KEY:
-						if (!(server || IsPlayerAdmin(consoleplayer)))
-							break;
-
-						if (!addons_localmode) {
-							S_StartSound(NULL, sfx_ding);
-							addons_localmode = true;
-						}
-						else {
-							S_StartSound(NULL, sfx_jshard);
-							addons_localmode = false;
-						}
-
-						break;
 				}
 			}
 		}
@@ -6929,6 +6914,21 @@ static void M_HandleAddons(INT32 choice)
 				if (refresh)
 					refreshdirmenu |= REFRESHDIR_NORMAL;
 			}
+			break;
+		//Local Addon Mode
+		case LOCALMODE_KEY:
+			if (!(server || IsPlayerAdmin(consoleplayer)))
+				break;
+
+			if (!addons_localmode) {
+				S_StartSound(NULL, sfx_ding);
+				addons_localmode = true;
+			}
+			else {
+				S_StartSound(NULL, sfx_jshard);
+				addons_localmode = false;
+			}
+
 			break;
 
 		case KEY_ESCAPE:
