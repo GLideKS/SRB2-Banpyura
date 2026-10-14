@@ -68,6 +68,7 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - - You can choose to hide certain sections via `cvarinfo` ("Show All" by default).
 - See the amount of used freeslots using `freeslots`.
 - Force console input with the `-forceconsole` parameter.
+- Banpyura options are saved in a separated config file. `bnpconfig.cfg`
 
 **Most of these options can be found in the menu under Banpyura Options....**
 
