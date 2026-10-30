@@ -412,6 +412,8 @@ consvar_t cv_showaddoninfo = CVAR_INIT ("showaddoninfo", "On", CV_SAVE|CV_CLIENT
 static CV_PossibleValue_t cvarinfo_const_t[] = {{0, "Show All"}, {1, "Hide Origin"}, {2, "Hide Flags"}, {3, "Only Show Values"}, {0, NULL}};
 consvar_t cv_cvarinformation = CVAR_INIT ("cvarinfo", "Show All", CV_SAVE|CV_CLIENT, cvarinfo_const_t, NULL);
 
+static consvar_t cv_allowadminaddfile = CVAR_INIT ("allowadminaddfilerequests", "Yes", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+
 char timedemo_name[256];
 boolean timedemo_csv;
 char timedemo_csv_id[256];
@@ -552,6 +554,9 @@ void D_RegisterServerCommands(void)
 
 	// for master server connection
 	AddMServCommands();
+
+	// I guess this goes here? - niko
+	CV_RegisterVar(&cv_allowadminaddfile);
 
 	CV_RegisterVar(&cv_glallowshaders);
 
@@ -3862,6 +3867,9 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 	if (client)
 		return;
 
+	if (server && !cv_allowadminaddfile.value)
+		return;
+
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; filename[i] != '\0'; i++)
 		if (!isprint(filename[i]) || filename[i] == ';')
@@ -3920,6 +3928,9 @@ static void Got_RequestAddfoldercmd(UINT8 **cp, INT32 playernum)
 
 	// Only the server processes this message.
 	if (client)
+		return;
+
+	if (server && !cv_allowadminaddfile.value)
 		return;
 
 	// Disallow non-printing characters and semicolons.
