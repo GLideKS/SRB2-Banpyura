@@ -412,7 +412,7 @@ consvar_t cv_showaddoninfo = CVAR_INIT ("showaddoninfo", "On", CV_SAVE|CV_CLIENT
 static CV_PossibleValue_t cvarinfo_const_t[] = {{0, "Show All"}, {1, "Hide Origin"}, {2, "Hide Flags"}, {3, "Only Show Values"}, {0, NULL}};
 consvar_t cv_cvarinformation = CVAR_INIT ("cvarinfo", "Show All", CV_SAVE|CV_CLIENT, cvarinfo_const_t, NULL);
 
-static consvar_t cv_allowadminaddfile = CVAR_INIT ("allowadminaddfilerequests", "Yes", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+static consvar_t cv_allowadminaddfile = CVAR_INIT ("allowfilerequests", "Yes", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
 
 char timedemo_name[256];
 boolean timedemo_csv;
