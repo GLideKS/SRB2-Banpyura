@@ -45,6 +45,9 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - `cam_centertoggle` and `cam2_centertoggle` are not exclusive to the Automatic playstyle.
 - Rejoin server menu with timestamps (Ring Racers)
 - Added total progress bar while downloading addons from a server.
+- `clearscores` command now blames the admin that used it rather than blaming the host.
+- `addfile`/`addfolder` requests from administrators are logged.
+- `allowfilerequests`: If off, addfile/addfodler requests from admins will be silently ignored (they are still logged). On by default.
 
 ### Lua
 
