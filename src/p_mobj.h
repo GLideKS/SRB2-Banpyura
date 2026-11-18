@@ -414,8 +414,6 @@ typedef struct mobj_s
 	INT32 cvmem;
 
 	struct pslope_s *standingslope; // The slope that the object is standing on (shouldn't need synced in savegames, right?)
-	fixed_t old_zdelta; // for floorspriteslope ???
-	fixed_t old_ox,old_oy,old_oz, old_dx,old_dy; // and these too...
 
 	boolean resetinterp; // if true, some fields should not be interpolated (see R_InterpolateMobjState implementation)
 	boolean colorized; // Whether the mobj uses the rainbow colormap

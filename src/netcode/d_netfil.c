@@ -109,6 +109,8 @@ typedef struct
 } pauseddownload_t;
 static pauseddownload_t *pauseddownload = NULL;
 
+INT32 addontypes[NUMADDONTYPES] = {0};
+
 file_download_t filedownload;
 
 static CURL *http_handle;
@@ -123,6 +125,8 @@ static UINT32 curl_origtotalfilesize;
 static char *curl_realname = NULL;
 static fileneeded_t *curl_curfile = NULL;
 HTTP_login *curl_logins;
+
+static addontype_t GetAddonType(const char *name);
 
 luafiletransfer_t *luafiletransfers = NULL;
 boolean waitingforluafiletransfer = false;
@@ -209,8 +213,8 @@ UINT8 *PutFileNeeded(UINT16 firstfile)
 				filestatus += (WILLSEND_NO << 4); // Won't send
 			else if (wadfiles[i]->filesize <= (UINT32)cv_maxsend.value * 1024)
 				filestatus += (WILLSEND_YES << 4); // Will send if requested
-			// else
-				// filestatus += (0 << 4); -- Won't send, too big
+			else
+				filestatus += (WILLSEND_TOOLARGE << 4); // Won't send, too big
 		}
 
 		WRITEUINT8(p, filestatus);
@@ -273,6 +277,9 @@ void D_ParseFileneeded(INT32 fileneedednum_parm, UINT8 *fileneededstr, UINT16 fi
 		fileneeded[i].failed = FDOWNLOAD_FAIL_NONE;
 		READSTRINGN(p, fileneeded[i].filename, MAX_WADPATH); // The next bytes are the file name
 		READMEM(p, fileneeded[i].md5sum, 16); // The last 16 bytes are the file checksum
+
+		// Should be good place to calculate that?
+		fileneeded[i].addontype = GetAddonType(fileneeded[i].filename);
 	}
 }
 
@@ -551,6 +558,56 @@ INT32 CL_CheckFiles(void)
 	else
 		return 1; //everything is FS_OPEN or FS_FOUND, proceed to loading
 }
+
+// archiNiko: this is a rip from SRB2K Saturn, including CL_CheckAddonTypes
+// the only change here is naming conventions: https://wiki.srb2.org/wiki/WAD_file#Naming_conventions_for_content
+static addontype_t GetAddonType(const char *name)
+{
+	const char *prefix = strchr(name, '_');
+
+	if (prefix == NULL || prefix - name > 5)
+		return ADDON_MISC;
+
+	// Skip:
+	// 'X' ("supports both SRB2 and SRB2K"), irrelevant
+	// 'V' ("originally required by all vanilla SRB2 files" ), deprecated and irrelevant
+	if (*name == 'X'
+		|| *name == 'V')
+		++name;
+
+	switch (*name)
+	{
+		case 'L':
+			return ADDON_SCRIPT;
+		break;
+
+		case 'R': // Race
+		case 'S': // SP, COOP, COMP
+		case 'F': // CTF
+		case 'M': // Match, TM Tag or H&S
+			return ADDON_MAP;
+		break;
+
+		case 'C':
+			return ADDON_CHARACTER;
+		break;
+	}
+
+	return ADDON_MISC;
+}
+
+// instead of using the "type" field, its .addontype now
+// this is due to a conflict... differing codebases.
+void CL_CheckAddonTypes(void)
+{
+	memset(&addontypes, 0, sizeof(addontypes));
+
+	for (INT32 i = 0; i < fileneedednum; i++)
+	{
+		addontypes[fileneeded[i].addontype]++;
+	}
+}
+
 
 // Load it now
 boolean CL_LoadServerFiles(void)

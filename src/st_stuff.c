@@ -2802,12 +2802,16 @@ static void ST_overlayDrawer(void)
 		if(!P_IsLocalPlayer(stplyr))
 		{
 			char name[MAXPLAYERNAME+1];
-			// shorten the name if its more than twelve characters.
-			strlcpy(name, player_names[stplyr-players], 13);
+			// shorten the name if its more than twenty four characters.
+			strlcpy(name, player_names[stplyr-players], 25);
 
 			// Show name of player being displayed
 			V_DrawCenteredString((BASEVIDWIDTH/6), BASEVIDHEIGHT-80, 0, M_GetText("Viewpoint:"));
-			V_DrawCenteredString((BASEVIDWIDTH/6), BASEVIDHEIGHT-64, V_ALLOWLOWERCASE, name);
+
+			if (strlen(name) <= 13)
+				V_DrawCenteredString((BASEVIDWIDTH/6), BASEVIDHEIGHT-64, V_ALLOWLOWERCASE, name);
+			else
+				V_DrawCenteredThinString((BASEVIDWIDTH/6), BASEVIDHEIGHT-64, V_ALLOWLOWERCASE, name);
 		}
 
 		// This is where we draw all the fun cheese if you have the chasecam off!
@@ -2939,44 +2943,54 @@ void ST_Drawer(void)
 	}
 }
 
-// draw movie frame amount and size
+
+// get the displayed string for the current movie mode
+static const char *MovieType(moviemode_t mode)
+{
+	switch (mode)
+	{
+	case MM_GIF:
+		return "GIF";
+	case MM_APNG:
+		return "APNG";
+	default:
+		return "???";
+	}
+}
+
+// draw movie information to the bottom-left of the screen
 void ST_MovieInfoDrawer(void)
 {
-	if (!moviemode)
+	if (!moviemode || !cv_moviemodeinfo.value)
 		return;
 
-	if (!cv_moviemodeinfo.value)
-		return;
+	const INT32 x = 3;
+	const INT32 y = BASEVIDHEIGHT - 8 - 2;
+	const INT32 type_duration = TICRATE;
+	const INT32 flags = V_ALLOWLOWERCASE | V_USERHUDTRANS | V_SNAPTOLEFT | V_SNAPTOBOTTOM;
 
-	INT32 gif_frames = M_RecordedFrames();
+	INT32 frames = M_GetMovieFrames();
+	float size = M_GetMovieSize();
 
-	INT32 x = 3;
-	INT32 y = BASEVIDHEIGHT - 8 - 2;
+	const char *type = MovieType(moviemode);
+	INT32 type_color = (frames % type_duration < type_duration / 2) ? V_REDMAP : 0;
 
-	float gif_size = M_SavedSize();
+	INT32 warning_cap = cv_gif_maxsize.value - 2;
+	boolean near_cap = (warning_cap > 0 && size >= warning_cap);
 
-	INT32 movietype_color = ((gif_frames / (TICRATE / 2)) % 2) ? V_REDMAP : 0;
+	// draw the movie type
+	V_DrawThinString(x, y, type_color | flags, type);
 
-	const char *movietype = (moviemode == MM_APNG ? "APNG" : "GIF");
-
-	V_DrawThinString(x, y,
-		movietype_color|V_USERHUDTRANS|V_SNAPTOLEFT|V_SNAPTOBOTTOM,
-		movietype
-	);
-
-	INT32 capwarning = max(cv_gif_maxsize.value - 2, 0);
-	boolean withincap = (capwarning > 0 ? (gif_size >= capwarning) : false);
-
-	V_DrawThinString(strlen(movietype) * 6 + x, y,
-		V_ALLOWLOWERCASE|V_USERHUDTRANS|V_SNAPTOLEFT|V_SNAPTOBOTTOM,
+	// draw the rest of the info (time and size)
+	V_DrawThinString(x + strlen(type) * 6, y, flags,
 		va(
 			"%s%d.%02ds | %.2f mb\x86", // the main format
 
-			(withincap ? "\x82" : "\x86"), // color if near the limit
+			(near_cap ? "\x82" : "\x86"), // color if near the limit
 			
-			G_TicsToSeconds(gif_frames), // seconds
-			G_TicsToCentiseconds(gif_frames), // centiseconds
-			gif_size // size in megabytes
+			frames / TICRATE, // seconds
+			G_TicsToCentiseconds(frames), // centiseconds
+			size // size in megabytes
 		)
 	);
 }

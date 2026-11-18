@@ -826,6 +826,7 @@ void SV_StartSinglePlayerServer(void)
 	server = true;
 	netgame = false;
 	multiplayer = false;
+	joinedIP[0] = '\0';	// Make sure to empty this so that we don't save garbage when we start our own game. (because yes we use this for netgames too....)
 	G_SetGametype(GT_COOP);
 
 	// no more tic the game with this settings!

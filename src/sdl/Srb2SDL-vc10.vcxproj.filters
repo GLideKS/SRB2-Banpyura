@@ -562,6 +562,12 @@
     <ClInclude Include="..\u_list.h" />
     <ClInclude Include="..\mserv.h" />
     <ClInclude Include="..\http-mserv.h" />
+    <ClInclude Include="..\lua_banpyura.h">
+      <Filter>LUA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\lua_httplib.h">
+      <Filter>LUA</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\tmap.nas">
@@ -1118,6 +1124,12 @@
     </ClCompile>
     <ClCompile Include="i_threads.c">
       <Filter>SDLApp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lua_banpyura.c">
+      <Filter>LUA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\lua_httplib.c">
+      <Filter>LUA</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

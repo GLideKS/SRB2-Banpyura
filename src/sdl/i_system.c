@@ -580,12 +580,18 @@ static void I_StartupConsole(void)
 	if (framebuffer)
 		consolevent = SDL_FALSE;
 
+	if (M_CheckParm("-forceconsole"))
+		consolevent = SDL_TRUE;
+
 	if (!consolevent) return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
-		consolevent = SDL_FALSE;
+
+		if (!M_CheckParm("-forceconsole"))
+			consolevent = SDL_FALSE;
+
 		return;
 	}
 	memset(&tty_con, 0x00, sizeof(tty_con));
@@ -2500,7 +2506,9 @@ void I_Quit(void)
 	if (quiting) goto death;
 	SDLforceUngrabMouse();
 	quiting = SDL_FALSE;
-	M_SaveConfig(NULL); //save game config, cvars..
+	M_SaveConfig(NULL, false); //save game config, cvars..
+	M_SaveConfig(NULL, true);  //and save Banpyura's stuff...
+	M_SaveJoinedIPs(); // Not in dedicated because you shouldnt be able to connect there
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(clientGamedata); // Tails 12-08-2002
 	//added:16-02-98: when recording a demo, should exit using 'q' key,
@@ -2591,7 +2599,8 @@ void I_Error(const char *error, ...)
 			SDL_Quit();
 		if (errorcount == 8)
 		{
-			M_SaveConfig(NULL);
+			M_SaveConfig(NULL, false);
+			M_SaveConfig(NULL, true);
 			G_SaveGameData(clientGamedata);
 		}
 		if (errorcount > 20)
@@ -2621,7 +2630,8 @@ void I_Error(const char *error, ...)
 	I_OutputMsg("\nI_Error(): %s\n", buffer);
 	// ---
 
-	M_SaveConfig(NULL); // save game config, cvars..
+	M_SaveConfig(NULL, false); // save game config, cvars..
+	M_SaveConfig(NULL, true); // hello Banpyura
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(clientGamedata); // Tails 12-08-2002
 

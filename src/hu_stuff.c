@@ -513,7 +513,7 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 	// If over DEDI_MAXMSGLEN, notify them and bail!
 	if (dedicated && (flags & HU_SERVER_SAY) && strlen(msg) > DEDI_MAXMSGLEN)
 	{
-		CONS_Printf("NOTICE: Too long, not sending! (max: %i, length: %li)\n", DEDI_MAXMSGLEN, strlen(msg));
+		CONS_Printf("NOTICE: Too long, not sending! (max: %i, length: %lu)\n", DEDI_MAXMSGLEN, strlen(msg));
 		return;
 	}
 

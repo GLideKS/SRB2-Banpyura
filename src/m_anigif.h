@@ -25,7 +25,7 @@
 INT32 GIF_open(const char *filename);
 void GIF_frame(void);
 INT32 GIF_close(void);
-float GIF_GetSizeMB(void);
+size_t GIF_GetSize(void);
 #endif
 
 extern consvar_t cv_gif_optimize, cv_gif_downscale, cv_gif_dynamicdelay, cv_gif_localcolortable, cv_gif_maxsize, cv_gif_rolling;

@@ -128,9 +128,10 @@ static void Command_Freeslots_f(void);
 static void Command_Map_f(void);
 static void Command_ResetCamera_f(void);
 
-static void Command_Addfilelocal(void);
 static void Command_Addfile(void);
+static void Command_Addfilelocal(void);
 static void Command_Addfolder(void);
+static void Command_Addfolderlocal(void);
 static void Command_ListWADS_f(void);
 static void Command_RunSOC(void);
 static void Command_Pause(void);
@@ -406,8 +407,12 @@ consvar_t cv_freedemocamera = CVAR_INIT("freedemocamera", "Off", CV_SAVE, CV_OnO
 // NOTE: this should be in hw_main.c, but we can't put it there as it breaks dedicated build
 consvar_t cv_glallowshaders = CVAR_INIT ("gr_allowcustomshaders", "On", CV_NETVAR, CV_OnOff, NULL);
 
+consvar_t cv_showaddoninfo = CVAR_INIT ("showaddoninfo", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+
 static CV_PossibleValue_t cvarinfo_const_t[] = {{0, "Show All"}, {1, "Hide Origin"}, {2, "Hide Flags"}, {3, "Only Show Values"}, {0, NULL}};
 consvar_t cv_cvarinformation = CVAR_INIT ("cvarinfo", "Show All", CV_SAVE|CV_CLIENT, cvarinfo_const_t, NULL);
+
+static consvar_t cv_allowadminaddfile = CVAR_INIT ("allowfilerequests", "Yes", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
 
 char timedemo_name[256];
 boolean timedemo_csv;
@@ -445,9 +450,11 @@ const char *netxcmdnames[MAXNETXCMD - 1] =
 	"REQADDFOLDER",
 	"SETMOTD",
 	"SUICIDE",
+	"DEMOTED",
 	"LUACMD",
 	"LUAVAR",
-	"LUAFILE"
+	"LUAFILE",
+	"MUTEPLAYER"
 };
 
 // =========================================================================
@@ -517,6 +524,7 @@ void D_RegisterServerCommands(void)
 	COM_AddCommand("addfolder", Command_Addfolder, COM_LUA);
 	COM_AddCommand("addfile", Command_Addfile, COM_LUA);
 	COM_AddCommand("addfilelocal", Command_Addfilelocal, COM_LUA|COM_CLIENT);
+	COM_AddCommand("addfolderlocal", Command_Addfolderlocal, COM_LUA|COM_CLIENT);
 	COM_AddCommand("listwad", Command_ListWADS_f, COM_LUA);
 
 	COM_AddCommand("runsoc", Command_RunSOC, COM_LUA);
@@ -547,7 +555,13 @@ void D_RegisterServerCommands(void)
 	// for master server connection
 	AddMServCommands();
 
+	// I guess this goes here? - niko
+	CV_RegisterVar(&cv_allowadminaddfile);
+
 	CV_RegisterVar(&cv_glallowshaders);
+
+	// server info
+	CV_RegisterVar(&cv_showaddoninfo);
 
 	// p_mobj.c
 	CV_RegisterVar(&cv_itemrespawntime);
@@ -1303,6 +1317,9 @@ static void SendNameAndColor(void)
 	char *p;
 
 	p = buf;
+
+	if (dedicated)
+		return;
 
 	// don't allow inaccessible colors
 	if (!skincolors[cv_playercolor.value].accessible)
@@ -2282,8 +2299,8 @@ static void Got_Pause(UINT8 **cp, INT32 playernum)
 	{
 		if (netgame)
 		{
-			if (dedicatedpause)
-				playername = "SERVER";
+			if (dedicatedpause && playernum == serverplayer) 
+				playername = "~SERVER";
 			else
 				playername = player_names[playernum];
 
@@ -2413,7 +2430,10 @@ static void Got_Clearscores(UINT8 **cp, INT32 playernum)
 	for (i = 0; i < MAXPLAYERS; i++)
 		players[i].score = players[i].recordscore = 0;
 
-	CONS_Printf(M_GetText("Scores have been reset by the server.\n"));
+	if (playernum == serverplayer)
+		CONS_Printf(M_GetText("Scores have been reset by the server.\n"));
+	else
+		CONS_Printf(M_GetText("Scores have been reset by %s.\n"), player_names[playernum]);
 }
 
 // Team changing functions
@@ -3664,7 +3684,7 @@ static void Command_Addfilelocal(void)
 
 	if (COM_Argc() != 2)
 	{
-		CONS_Printf(M_GetText("addfilelocal <wadfile.wad>: load wad file\n"));
+		CONS_Printf(M_GetText("addfilelocal <filename.pk3/wad/lua/soc>: Load add-on locally\n"));
 		return;
 	}
 	else
@@ -3807,6 +3827,28 @@ static void Command_Addfolder(void)
 	}
 }
 
+// similar to addfilelocal but for folder addons
+static void Command_Addfolderlocal(void)
+{
+	const char *fn;
+	INT32 i;
+
+	if (COM_Argc() != 2)
+	{
+		CONS_Printf(M_GetText("addfolderlocal <path>: Load add-on locally\n"));
+		return;
+	}
+	else
+		fn = COM_Argv(1);
+
+	// Disallow non-printing characters and semicolons.
+	for (i = 0; fn[i] != '\0'; i++)
+		if (!isprint(fn[i]) || fn[i] == ';')
+			return;
+
+	P_AddFolderLocal(fn);
+}
+
 static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 {
 	char filename[241];
@@ -3819,8 +3861,13 @@ static void Got_RequestAddfilecmd(UINT8 **cp, INT32 playernum)
 	READSTRINGN(*cp, filename, 240);
 	READMEM(*cp, md5sum, 16);
 
+	CONS_Alert(CONS_NOTICE, M_GetText("Addfile command request received from %s, file %s\n"), player_names[playernum], filename);
+
 	// Only the server processes this message.
 	if (client)
+		return;
+
+	if (server && !cv_allowadminaddfile.value)
 		return;
 
 	// Disallow non-printing characters and semicolons.
@@ -3875,10 +3922,15 @@ static void Got_RequestAddfoldercmd(UINT8 **cp, INT32 playernum)
 
 	READSTRINGN(*cp, path, 240);
 
+	CONS_Alert(CONS_NOTICE, "Addfolder command request received from %s, path %s\n", player_names[playernum], path);
+
 	/// \todo Integrity checks.
 
 	// Only the server processes this message.
 	if (client)
+		return;
+
+	if (server && !cv_allowadminaddfile.value)
 		return;
 
 	// Disallow non-printing characters and semicolons.

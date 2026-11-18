@@ -7861,7 +7861,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	I_FinishUpdate(); // page flip or blit buffer
 
 	// Reset the palette
-	if (rendermode != render_none)
+	if (!(rendermode == render_none || reloadinggamestate))
 		V_SetPaletteLump("PLAYPAL");
 
 	// Initialize sector node list.
@@ -7953,7 +7953,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 
 	// Let's fade to black here
 	// But only if we didn't do the special stage wipe
-	if (rendermode != render_none && !(ranspecialwipe || reloadinggamestate))
+	if (!(ranspecialwipe || reloadinggamestate))
 		P_RunLevelWipe();
 
 	if (!(reloadinggamestate || titlemapinaction))
@@ -8489,5 +8489,11 @@ boolean P_AddWadFileLocal(const char *wadfilename)
 boolean P_AddFolder(const char *folderpath)
 {
 	return D_CheckPathAllowed(folderpath, "tried to add folder") &&
-		P_LoadAddon(W_InitFolder(folderpath, false, false));
+		P_LoadAddon(W_InitFolder(folderpath, false, false, false));
+}
+
+boolean P_AddFolderLocal(const char *folderpath)
+{
+	return D_CheckPathAllowed(folderpath, "tried to add folder") &&
+		P_LoadAddon(W_InitFolder(folderpath, false, false, true));
 }

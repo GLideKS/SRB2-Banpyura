@@ -162,7 +162,7 @@ FILE *W_OpenWadFile(const char **filename, boolean useerrors);
 // Load and add a wadfile to the active wad files, returns numbers of lumps, INT16_MAX on error
 UINT16 W_InitFile(const char *filename, boolean mainfile, boolean startup, boolean local);
 // Adds a folder as a file
-UINT16 W_InitFolder(const char *path, boolean mainfile, boolean startup);
+UINT16 W_InitFolder(const char *path, boolean mainfile, boolean startup, boolean local);
 
 // W_InitMultipleFiles exits if a file was not found, but not if all is okay.
 void W_InitMultipleFiles(addfilelist_t *list);

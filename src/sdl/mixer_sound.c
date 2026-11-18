@@ -1428,8 +1428,8 @@ void I_StopSong(void)
 
 void I_PauseSong(void)
 {
-	if(I_SongType() == MU_MID) // really, SDL Mixer? why can't you pause MIDI???
-		return;
+	//if(I_SongType() == MU_MID) // really, SDL Mixer? why can't you pause MIDI???
+	//	return;
 
 	if(I_SongType() != MU_GME && I_SongType() != MU_MOD && I_SongType() != MU_MID)
 		Mix_UnregisterEffect(MIX_CHANNEL_POST, count_music_bytes);
@@ -1440,8 +1440,8 @@ void I_PauseSong(void)
 
 void I_ResumeSong(void)
 {
-	if (I_SongType() == MU_MID)
-		return;
+	//if (I_SongType() == MU_MID)
+	//	return;
 
 	if (I_SongType() != MU_GME && I_SongType() != MU_MOD && I_SongType() != MU_MID)
 	{

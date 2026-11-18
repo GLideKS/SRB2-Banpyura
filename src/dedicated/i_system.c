@@ -219,7 +219,8 @@ UINT8 graphics_started = 0;
 
 UINT8 keyboard_started = 0;
 
-static boolean consolevent = false;
+static boolean consolevent = false; /* Whether console events are processed. */
+static boolean consoleistty = true; /* Whether we're user or system facing. */
 #if defined (__unix__) || defined(__APPLE__) || defined (UNIXCOMMON)
 static boolean framebuffer = false;
 #endif
@@ -479,7 +480,8 @@ FUNCNORETURN static void I_QuitStatus(int status)
 		abort();
 
 	is_quitting = true;
-	M_SaveConfig(NULL); //save game config, cvars..
+	M_SaveConfig(NULL, false); //save game config, cvars..
+	M_SaveConfig(NULL, true);  //and save Banpyura's stuff...
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(clientGamedata); // Tails 12-08-2002
 	//added:16-02-98: when recording a demo, should exit using 'q' key,
@@ -631,7 +633,7 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 		return;
 
 	if(mumble->uiVersion != 2) {
-		wcsncpy(mumble->name, L"SRB2 Banpyura "VERSIONSTRINGW, 256);
+		wcsncpy(mumble->name, L"SRB2 "VERSIONSTRINGW, 256);
 		wcsncpy(mumble->description, L"Sonic Robo Blast 2 with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
 	}
@@ -801,12 +803,14 @@ static void I_StartupConsole(void)
 	if (framebuffer)
 		consolevent = false;
 
+	consolevent = consolevent || M_CheckParm("-forceconsole");
+
 	if (!consolevent) return;
 
 	if (isatty(STDIN_FILENO)!=1)
 	{
 		I_OutputMsg("stdin is not a tty, tty console mode failed\n");
-		consolevent = false;
+		consoleistty = false;
 		return;
 	}
 	memset(&tty_con, 0x00, sizeof(tty_con));
@@ -858,41 +862,39 @@ static void I_GetConsoleEvents(void)
 		if (read(STDIN_FILENO, &key, 1) == -1 || !key)
 			return;
 
-		// we have something
-		// backspace?
-		// NOTE TTimo testing a lot of values .. seems it's the only way to get it to work everywhere
-		if ((key == tty_erase) || (key == 127) || (key == 8))
-		{
-			if (tty_con.cursor > 0)
-			{
+		switch (key) {
+		default:
+			if (key == tty_erase); /* fallthrough */
+			else if (key < ' ') continue; // check if this is a control char
+			else if (tty_con.cursor < sizeof(tty_con.buffer)) {
+				// push regular character
+				ev.key = tty_con.buffer[tty_con.cursor] = key;
+				tty_con.cursor++;
+				/* Write the character for user feedback. */
+				if (consoleistty)
+					write(STDOUT_FILENO, &key, 1);
+				break;
+			}
+			/* fallthrough */
+		case '\b':
+		case 127:
+			ev.key = KEY_BACKSPACE;
+			if (consoleistty && tty_con.cursor > 0) {
 				tty_con.cursor--;
 				tty_con.buffer[tty_con.cursor] = '\0';
 				tty_Back();
 			}
-			ev.key = KEY_BACKSPACE;
-		}
-		else if (key < ' ') // check if this is a control char
-		{
-			if (key == '\n')
-			{
+			break;
+		case '\n':
+			ev.key = KEY_ENTER;
+			if (consoleistty) {
 				tty_Clear();
 				tty_con.cursor = 0;
-				ev.key = KEY_ENTER;
 			}
-			else if (key == 0x4) // ^D, aka EOF
-			{
-				// shut down, most unix programs behave this way
-				I_Quit();
-			}
-			else continue;
-		}
-		else if (tty_con.cursor < sizeof(tty_con.buffer))
-		{
-			// push regular character
-			ev.key = tty_con.buffer[tty_con.cursor] = key;
-			tty_con.cursor++;
-			// print the current line (this is differential)
-			write(STDOUT_FILENO, &key, 1);
+			break;
+		case 0x4: // ^D, aka EOF
+			// shut down, most unix programs behave this way
+			I_Quit();
 		}
 		if (ev.key) D_PostEvent(&ev);
 		//tty_FlushIn();
@@ -1122,7 +1124,7 @@ void I_OutputMsg(const char *fmt, ...)
 	}
 #else
 #ifdef HAVE_TERMIOS
-	if (consolevent && ttycon_ateol)
+	if (consoleistty && ttycon_ateol)
 	{
 		tty_Clear();
 		ttycon_ateol = false;
@@ -1132,7 +1134,7 @@ void I_OutputMsg(const char *fmt, ...)
 	if (!framebuffer)
 		fprintf(stderr, "%s", txt);
 #ifdef HAVE_TERMIOS
-	if (consolevent && txt[len-1] == '\n')
+	if (consoleistty && txt[len-1] == '\n')
 	{
 		write(STDOUT_FILENO, tty_con.buffer, tty_con.cursor);
 		ttycon_ateol = true;

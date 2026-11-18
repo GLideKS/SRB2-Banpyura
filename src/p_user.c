@@ -9946,7 +9946,6 @@ void P_ResetCamera(player_t *player, camera_t *thiscam)
 		thiscam->angle = player->mo->angle;
 		thiscam->aiming = 0;
 	}
-	thiscam->relativex = 0;
 
 	thiscam->subsector = R_PointInSubsector(thiscam->x,thiscam->y);
 
@@ -10276,38 +10275,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		y = mo->y - FixedMul(FINESINE((angle>>ANGLETOFINESHIFT) & FINEMASK), distxy);
 	}
 
-#if 0
-	if (twodlevel || (mo->flags2 & MF2_TWOD))
-	{
-		// Camera doesn't ALWAYS need to move, only when running...
-		if (abs(mo->momx) > 10)
-		{
-			// Move the camera all smooth-like, not jerk it around...
-			if (mo->momx > 0)
-			{
-				if (thiscam->relativex < MAXCAMERADIST)
-					thiscam->relativex += 4*FRACUNIT;
-			}
-			else if (mo->momx < 0)
-			{
-				if (thiscam->relativex > -MAXCAMERADIST)
-					thiscam->relativex -= 4*FRACUNIT;
-			}
-		}
-		else // If speed is less than required, start moving the camera back.
-		{
-			if (thiscam->relativex > 0)
-				thiscam->relativex -= 4*FRACUNIT;
-			else if (thiscam->relativex < 0)
-				thiscam->relativex += 4*FRACUNIT;
-		}
-
-		// Add the relative x to the global x
-		x += thiscam->relativex;
-		y += mo->momy << 1;
-	}
-#endif // bad 2D camera code
-
 	pviewheight = FixedMul(41*player->height/48, mo->scale);
 
 	if (sign)
@@ -10460,7 +10427,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 					plink = (polymaplink_t *)(plink->link.next);
 				}
 			}
-	}
+		}
 
 		// crushed camera
 		if (myceilingz <= myfloorz + thiscam->height && !resetcalled && !cameranoclip)
@@ -10474,13 +10441,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 			&& myceilingz - thiscam->height < z
 			&& !cameranoclip)
 		{
-/*			// no fit
-			if (!resetcalled && !cameranoclip)
-			{
-				P_ResetCamera(player, thiscam);
-				return true;
-			}
-*/
 			z = myceilingz - thiscam->height-FixedMul(11*FRACUNIT, mo->scale);
 			// is the camera fit is there own sector
 		}
@@ -10541,22 +10501,6 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 
 	if (!camstill && !resetcalled && !paused && !cameraexact)
 		thiscam->angle = R_PointToAngle2(thiscam->x, thiscam->y, viewpointx, viewpointy);
-
-/*
-	if (twodlevel || (mo->flags2 & MF2_TWOD))
-		thiscam->angle = angle;
-*/
-	// follow the player
-	/*if (player->playerstate != PST_DEAD && (camspeed) != 0)
-	{
-		if (P_AproxDistance(mo->x - thiscam->x, mo->y - thiscam->y) > (checkdist + P_AproxDistance(mo->momx, mo->momy)) * 4
-			|| abs(mo->z - thiscam->z) > checkdist * 3)
-		{
-			if (!resetcalled)
-				P_ResetCamera(player, thiscam);
-			return true;
-		}
-	}*/
 
 	// compute aming to look the viewed point
 	f1 = viewpointx-thiscam->x;
@@ -10640,18 +10584,7 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	else
 		mo->flags2 &= ~MF2_SHADOW;
 
-/*	if (!resetcalled && (player->powers[pw_carry] == CR_NIGHTSMODE && player->exiting))
-	{
-		// Don't let the camera match your movement.
-		thiscam->momz = 0;
-
-		// Only let the camera go a little bit upwards.
-		if (mo->eflags & MFE_VERTICALFLIP && thiscam->aiming < ANGLE_315 && thiscam->aiming > ANGLE_180)
-			thiscam->aiming = ANGLE_315;
-		else if (!(mo->eflags & MFE_VERTICALFLIP) && thiscam->aiming > ANGLE_45 && thiscam->aiming < ANGLE_180)
-			thiscam->aiming = ANGLE_45;
-	}
-	else */if (!resetcalled && (player->playerstate == PST_DEAD || player->playerstate == PST_REBORN))
+	if (!resetcalled && (player->playerstate == PST_DEAD || player->playerstate == PST_REBORN))
 	{
 		// Don't let the camera match your movement.
 		thiscam->momz = 0;
@@ -10670,8 +10603,11 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 	if (!camstill && !resetcalled && !paused && cameraexact)
 		thiscam->angle = R_PointToAngle2(thiscam->x, thiscam->y, viewpointx, viewpointy);
 
-	// romoney5: roblox-style camera clipping
-	if (camclipping == 2 && !(twodlevel || (mo->flags2 & MF2_TWOD)))
+	// romoney5: exact camera clipping
+	if (camclipping == 2 && !( // not under these conditions, though:
+		twodlevel || (mo->flags2 & MF2_TWOD)
+		|| (player->playerstate == PST_DEAD || player->playerstate == PST_REBORN)
+		))
 	{
 		INT32 targetx = thiscam->x, targety = thiscam->y, targetz = thiscam->z;
 
@@ -10682,30 +10618,38 @@ boolean P_MoveChaseCamera(player_t *player, camera_t *thiscam, boolean resetcall
 		else
 			thiscam->z = mo->z + pviewheight;
 
-		INT32 tryangle = R_PointToAngle2(thiscam->x, thiscam->y, targetx, targety);
-		INT32 trydist = R_PointToDist2(targetx, targety, thiscam->x, thiscam->y);
-		INT32 tryzangle = R_PointToAngle2(0, 0, trydist, -(thiscam->z - targetz));
+		fixed_t tryangle = (R_PointToAngle2(thiscam->x, thiscam->y, targetx, targety) >> ANGLETOFINESHIFT) & FINEMASK;
+		fixed_t trydist = R_PointToDist2(targetx, targety, thiscam->x, thiscam->y);
+		fixed_t tryzangle = (R_PointToAngle2(0, 0, trydist, -(thiscam->z - targetz)) >> ANGLETOFINESHIFT) & FINEMASK;
 		trydist = R_PointToDist2(0, 0, trydist, thiscam->z - targetz);
 		
-		INT32 MAXTRYMOVE = FRACUNIT / 2;
-		INT32 movex = FixedMul(FINECOSINE((tryangle >> ANGLETOFINESHIFT) & FINEMASK), MAXTRYMOVE);
-		INT32 movey = FixedMul(FINESINE((tryangle >> ANGLETOFINESHIFT) & FINEMASK), MAXTRYMOVE);
-		INT32 movez = FixedMul(FINESINE((tryzangle >> ANGLETOFINESHIFT) & FINEMASK), MAXTRYMOVE);
-		movex = FixedMul(movex, FINECOSINE((tryzangle >> ANGLETOFINESHIFT) & FINEMASK));
-		movey = FixedMul(movey, FINECOSINE((tryzangle >> ANGLETOFINESHIFT) & FINEMASK));
+		fixed_t move_step = mo->scale / 2;
+		fixed_t movex = FixedMul(FINECOSINE(tryangle), move_step);
+		fixed_t movey = FixedMul(FINESINE(tryangle), move_step);
+		fixed_t movez = FixedMul(FINESINE(tryzangle), move_step);
+		movex = FixedMul(movex, FINECOSINE(tryzangle));
+		movey = FixedMul(movey, FINECOSINE(tryzangle));
 
-		// hack; decrease the camera's radius
-		INT32 radius = thiscam->radius;
+		// hack: decrease the camera's radius
+		fixed_t radius = thiscam->radius;
 		thiscam->radius = radius / 3;
 
-		for (INT32 moved = 0; moved < trydist; moved += MAXTRYMOVE) {
+		for (fixed_t moved = 0; ; moved += move_step)
+		{
+			// reached max distance; return to the original position to avoid snapping
+			// at very small scales
+			if (moved >= trydist)
+			{
+				thiscam->x = targetx;
+				thiscam->y = targety;
+				thiscam->z = targetz;
+
+				break;
+			}
+
 			thiscam->x += movex;
 			thiscam->y += movey;
 			thiscam->z += movez;
-
-			// reached max distance
-			if (moved >= trydist)
-				break;
 
 			// one-side wall
 			if (!P_CheckCameraPosition(thiscam->x, thiscam->y, thiscam))

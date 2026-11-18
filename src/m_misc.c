@@ -174,6 +174,59 @@ boolean takescreenshot = false; // Take a screenshot this tic
 moviemode_t moviemode = MM_OFF;
 static INT32 movieframesrecorded = 0;
 
+char joinedIPlist[NUMLOGIP][3][MAX_LOGIP];
+char joinedIP[MAX_LOGIP];
+
+// This initializes the above array to have NULL everywhere it should.
+void M_InitJoinedIPArray(void)
+{
+	for (UINT8 index = 0; index < NUMLOGIP; index++)
+		joinedIPlist[index][0][0] = joinedIPlist[index][1][0] = joinedIPlist[index][2][0] = '\0';
+}
+
+// This adds an entry to the above array
+void M_AddToJoinedIPs(char *address, char *date, char *servname)
+{
+	UINT8 index = 0;
+	if ((stricmp(address, "localhost") == 0) || (stricmp(address, "self") == 0))
+		return;
+
+	for (index = 0; index < (NUMLOGIP - 1); index++)
+	{
+		if (strcmp(joinedIPlist[index][0], address) == 0)
+			break;
+	}
+
+	CONS_Printf("Adding %s (%s) to list of joined servers - %s\n", servname, address, date);
+
+	// Start by moving every IP up 1 slot (dropping the last IP in the table)
+	for (; index; index--)
+	{
+		strlcpy(joinedIPlist[index][0], joinedIPlist[index - 1][0], MAX_LOGIP);
+		strlcpy(joinedIPlist[index][1], joinedIPlist[index - 1][1], MAX_LOGIP);
+		strlcpy(joinedIPlist[index][2], joinedIPlist[index - 1][2], MAX_LOGIP);
+	}
+
+	// and add the new IP at the start of the table!
+	strlcpy(joinedIPlist[0][0], address, MAX_LOGIP);
+	strlcpy(joinedIPlist[0][1], date, MAX_LOGIP);
+	strlcpy(joinedIPlist[0][2], servname, MAX_LOGIP);
+	M_SaveJoinedIPs();
+}
+
+boolean M_RemoveJoinedIP(UINT8 index)
+{
+	// Nothing in this slot
+	if (!(joinedIPlist[index][0][0] && joinedIPlist[index][1][0]))
+	{
+		return false;
+	}
+
+	joinedIPlist[index][0][0] = joinedIPlist[index][1][0] = '\0';
+	M_SaveJoinedIPs();
+	return true;
+}
+
 /** Returns the map number for a map identified by the last two characters in
   * its name.
   *
@@ -442,6 +495,73 @@ boolean FIL_CheckExtension(const char *in)
 	return false;
 }
 
+void M_SaveJoinedIPs(void)
+{
+	FILE *file = NULL;
+	UINT8 index;
+	const char *filepath = va("%s" PATHSEP "%s", srb2home, IPLOGFILE);
+	if (!*joinedIPlist[0][0])
+		return;
+
+	file = fopen(filepath, "w");
+	if (!file)
+	{
+		CONS_Alert(CONS_WARNING, "Could not save recent IP list into %s\n", IPLOGFILE);
+		return;
+	}
+
+	for (index = 0; index < NUMLOGIP; index++)
+	{
+		if (*joinedIPlist[index][0])
+		{
+			fprintf(file, "%s%s%s%s%s\n", joinedIPlist[index][0], IPLOGFILESEP, joinedIPlist[index][1], IPLOGFILESEP, joinedIPlist[index][2]);
+		}
+	}
+	fclose(file);
+}
+
+void M_LoadJoinedIPs(void)
+{
+	FILE *file = NULL;
+	UINT8 index = 0;
+	char *filepath;
+	char *string;
+	char buffer[2 * (MAX_LOGIP + 1)];
+	filepath = va("%s" PATHSEP "%s", srb2home, IPLOGFILE);
+	file = fopen(filepath, "r");
+	if (file == NULL)
+		return;
+
+	for (index = 0; fgets(buffer, (int)sizeof(buffer), file); index++)
+	{
+		if (index >= NUMLOGIP)
+			break;
+
+		if (!*buffer || (*buffer == '\n'))
+			break;
+
+		for (size_t sub = 0; sub < sizeof(buffer); sub++)
+		{
+			if (buffer[sub] == '\n')
+			{
+				buffer[sub] = '\0';
+				break;
+			}
+		}
+
+		string = strtok(buffer, IPLOGFILESEP);
+		strlcpy(joinedIPlist[index][0], string, MAX_LOGIP);
+		string = strtok(NULL, IPLOGFILESEP);
+		if (string)
+			strlcpy(joinedIPlist[index][1], string, MAX_LOGIP);
+
+		string = strtok(NULL, IPLOGFILESEP);
+		if (string)
+			strlcpy(joinedIPlist[index][2], string, MAX_LOGIP);
+	}
+	fclose(file);
+}
+
 // ==========================================================================
 //                        CONFIGURATION FILE
 // ==========================================================================
@@ -451,15 +571,18 @@ boolean FIL_CheckExtension(const char *in)
 //
 
 char configfile[MAX_WADPATH];
+char bnpconfigfile[MAX_WADPATH];
 
 // ==========================================================================
 //                          CONFIGURATION
 // ==========================================================================
 static boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
+// archiNiko: now also waits until CV_CLIENT stuff is set (bnpconfig.cfg)
 
 /** Saves a player's config, possibly to a particular file.
   *
   * \sa Command_LoadConfig_f
+  * \todo bnpconfig support probably (will do eventually)
   */
 void Command_SaveConfig_f(void)
 {
@@ -474,7 +597,7 @@ void Command_SaveConfig_f(void)
 	strcpy(tmpstr, COM_Argv(1));
 	FIL_ForceExtension(tmpstr, ".cfg");
 
-	M_SaveConfig(tmpstr);
+	M_SaveConfig(tmpstr, false);
 	if (stricmp(COM_Argv(2), "-silent"))
 		CONS_Printf(M_GetText("config saved as %s\n"), configfile);
 }
@@ -482,6 +605,7 @@ void Command_SaveConfig_f(void)
 /** Loads a game config, possibly from a particular file.
   *
   * \sa Command_SaveConfig_f, Command_ChangeConfig_f
+  * \todo bnpconfig support probably (will do eventually)
   */
 void Command_LoadConfig_f(void)
 {
@@ -540,9 +664,16 @@ void M_FirstLoadConfig(void)
 	if (M_CheckParm("-config") && M_IsNextParm())
 	{
 		strcpy(configfile, M_GetNextParm());
-		CONS_Printf(M_GetText("config file: %s\n"), configfile);
+		CONS_Printf(M_GetText("SRB2 Config file: %s\n"), configfile);
 	}
 
+	// ditto for Banpyura
+	if (M_CheckParm("-bnpconfig") && M_IsNextParm())
+	{
+		strcpy(bnpconfigfile, M_GetNextParm());
+		CONS_Printf(M_GetText("SRB2-Banpyura Config file: %s\n"), bnpconfigfile); // archiNiko: maybe rephrase this?
+	}
+	
 	// load default control
 	G_DefineDefaultControls();
 	G_CopyControls(gamecontrol, gamecontroldefault[gcs_fps], NULL, 0);
@@ -565,6 +696,9 @@ void M_FirstLoadConfig(void)
 	COM_BufInsertText(va("%s \"%d\"\n", cv_execversion.name, EXECVERSION));
 	CV_ToggleExecVersion(false);
 
+	// load config again except for SRB2-Banpyura client cvars
+	COM_BufInsertText(va("exec \"%s\"\n", bnpconfigfile));
+	
 	// make sure I_Quit() will write back the correct config
 	// (do not write back the config if it crash before)
 	gameconfig_loaded = true;
@@ -580,11 +714,13 @@ void M_FirstLoadConfig(void)
 }
 
 /** Saves the game configuration.
-  *
+  * [SRB2-Banpyura] OR Banpyura config
+  * 
   * \sa Command_SaveConfig_f
   */
-void M_SaveConfig(const char *filename)
+void M_SaveConfig(const char *filename, boolean forbanpyura)
 {
+#define THISCONFIG (forbanpyura ? bnpconfigfile : configfile)
 	FILE *f;
 	char *filepath;
 
@@ -611,7 +747,7 @@ void M_SaveConfig(const char *filename)
 		f = fopen(filepath, "w");
 		// change it only if valid
 		if (f)
-			strcpy(configfile, filepath);
+			strcpy(THISCONFIG, filepath);
 		else
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("Couldn't save game config file %s\n"), filepath);
@@ -620,45 +756,48 @@ void M_SaveConfig(const char *filename)
 	}
 	else
 	{
-		if (!strstr(configfile, ".cfg"))
+		if (!strstr(THISCONFIG, ".cfg"))
 		{
 			CONS_Alert(CONS_NOTICE, M_GetText("Config filename must be .cfg\n"));
 			return;
 		}
 
-		f = fopen(configfile, "w");
+		f = fopen(THISCONFIG, "w");
 		if (!f)
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("Couldn't save game config file %s\n"), configfile);
+			CONS_Alert(CONS_ERROR, M_GetText("Couldn't save game config file %s\n"), THISCONFIG);
 			return;
 		}
 	}
 
 	// header message
-	fprintf(f, "// SRB2 configuration file.\n");
+	fprintf(f, "// SRB2%sconfiguration file.\n", (forbanpyura ? "-Banpyura " : " "));
 
-	// print execversion FIRST, because subsequent consvars need to be filtered
-	// always print current EXECVERSION
-	fprintf(f, "%s \"%d\"\n", cv_execversion.name, EXECVERSION);
+	if (!forbanpyura)
+	{
+		// print execversion FIRST, because subsequent consvars need to be filtered
+		// always print current EXECVERSION
+		fprintf(f, "%s \"%d\"\n", cv_execversion.name, EXECVERSION);
+	}
 
 	// FIXME: save key aliases if ever implemented..
 
-	if (tutorialmode && tutorialgcs)
+	if ((tutorialmode && tutorialgcs) && !forbanpyura)
 	{
 		CV_SetValue(&cv_usemouse, tutorialusemouse);
 		CV_SetValue(&cv_alwaysfreelook, tutorialfreelook);
 		CV_SetValue(&cv_mousemove, tutorialmousemove);
 		CV_SetValue(&cv_analog[0], tutorialanalog);
-		CV_SaveVariables(f);
+		CV_SaveVariables(f, false);
 		CV_Set(&cv_usemouse, cv_usemouse.defaultvalue);
 		CV_Set(&cv_alwaysfreelook, cv_alwaysfreelook.defaultvalue);
 		CV_Set(&cv_mousemove, cv_mousemove.defaultvalue);
 		CV_Set(&cv_analog[0], cv_analog[0].defaultvalue);
 	}
 	else
-		CV_SaveVariables(f);
+		CV_SaveVariables(f, forbanpyura);
 
-	if (!dedicated)
+	if (!dedicated && !forbanpyura)
 	{
 		if (tutorialmode && tutorialgcs)
 			G_SaveKeySetting(f, gamecontroldefault[gcs_custom], gamecontrolbis); // using gcs_custom as temp storage
@@ -667,6 +806,7 @@ void M_SaveConfig(const char *filename)
 	}
 
 	fclose(f);
+#undef THISCONFIG
 }
 
 // ==========================================================================
@@ -1000,33 +1140,49 @@ static void M_PNGFrame(png_structp png_ptr, png_infop png_info_ptr, png_bytep pn
 	png_uint_32 x, y;
 	png_uint_16 framedelay = (png_uint_16)cv_apng_delay.value;
 
+	// romoney5: fixed apng support for both renderers (probably for the last time)
+	PNG_CONST png_uint_32 row_multiplier = pitch / width; // in opengl this should return 3 because of the three channels
+
+	png_uint_32 real_x = 0; // the amount of written columns
+
+	// size of each row:
+	// the regular row size reported by apng multiplied by the downscale factor twice (for x and y scale)
+	png_uint_32 row_increment = pitch * (downscale * downscale);
+	// i actually have no idea why this works
+	// take the difference between the divided width and regular width, multiply it like before,
+	// and divide by 3 in software
+	row_increment += ((vid.width - (width * downscale)) * (downscale * downscale)) * row_multiplier / 3;
+
 	apng_frames++;
 
 	for (y = 0; y < height; y++)
 	{
-		row_pointers[y] = malloc(pitch * sizeof(png_byte));
-		for (x = 0; x < width; x++)
-			row_pointers[y][x] = png_buf[x * downscale];
-		png_buf += pitch * (downscale * downscale);
+		real_x = 0;
+		row_pointers[y] = png_malloc(png_ptr, pitch * sizeof(png_byte));
+		if (row_pointers[y])
+		{
+			for (x = 0; x < pitch * downscale; x++)
+			{
+				row_pointers[y][real_x] = png_buf[x];
+				real_x++;
+
+				// after all channels are written, skip the next downscaled pixels if applicable
+				if (x % row_multiplier == row_multiplier - 1)
+					x += (downscale - 1) * row_multiplier;
+			}
+			png_buf += row_increment; // move to the next row
+		}
 	}
-		//for (x = 0; x < width; x++)
-		//{
-		//	printf("%d", x);
-		//	row_pointers[y][x] = 0;
-		//}
-	/*	row_pointers[y] = calloc(1, sizeof(png_bytep));
-		png_buf += pitch * 2;
-	}*/
 
 #ifndef PNG_STATIC
 	if (aPNG_write_frame_head)
 #endif
 		aPNG_write_frame_head(apng_ptr, apng_info_ptr, row_pointers,
-			width,     /* width */
-			height,    /* height */
-			0,         /* x offset */
-			0,         /* y offset */
-			framedelay, TICRATE,/* delay numerator and denominator */
+			width,                     /* width */
+			height,                    /* height */
+			0,                         /* x offset */
+			0,                         /* y offset */
+			framedelay, TICRATE,       /* delay numerator and denominator */
 			PNG_DISPOSE_OP_BACKGROUND, /* dispose */
 			PNG_BLEND_OP_SOURCE        /* blend */
 		                     );
@@ -1037,6 +1193,11 @@ static void M_PNGFrame(png_structp png_ptr, png_infop png_info_ptr, png_bytep pn
 	if (aPNG_write_frame_tail)
 #endif
 		aPNG_write_frame_tail(apng_ptr, apng_info_ptr);
+
+	// free the pointers
+	for (y = 0; y < height; y++)
+		if (row_pointers[y])
+			png_free(png_ptr, row_pointers[y]);
 
 	png_free(png_ptr, (png_voidp)row_pointers);
 }
@@ -1051,9 +1212,10 @@ static void M_PNGfix_acTL(png_structp png_ptr, png_infop png_info_ptr,
 #endif
 }
 
-static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
+static boolean M_SetupaPNG(png_const_charp filename, const UINT8 *palette)
 {
 	png_uint_16 downscale;
+	PNG_CONST png_byte *pal = (const png_byte *)palette;
 
 	apng_downscale = (!!cv_apng_downscale.value);
 
@@ -1067,7 +1229,7 @@ static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 	}
 
 	apng_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,
-	 PNG_error, PNG_warn);
+		PNG_error, PNG_warn);
 	if (!apng_ptr)
 	{
 		CONS_Debug(DBG_RENDER, "M_StartMovie: Error on initialize libpng\n");
@@ -1130,7 +1292,7 @@ static boolean M_SetupaPNG(png_const_charp filename, png_bytep pal)
 //                             MOVIE MODE
 // ==========================================================================
 #if NUMSCREENS > 2
-static inline moviemode_t M_StartMovieAPNG(const char *pathname)
+static moviemode_t M_StartMovieAPNG(const char *pathname)
 {
 #ifdef USE_APNG
 	UINT8 *palette = NULL;
@@ -1255,45 +1417,24 @@ void M_SaveFrame(void)
 #if NUMSCREENS > 2
 	// paranoia: should be unnecessary without singletics
 	static tic_t oldtic = 0;
+	float old_size;
 
 	if (oldtic == I_GetTime() && !singletics)
 		return;
 	else
 		oldtic = I_GetTime();
 
+	old_size = M_GetMovieSize();
+
 	switch (moviemode)
 	{
 		case MM_SCREENSHOT:
 			takescreenshot = true;
-			return;
+			break;
 		case MM_GIF:
-			movieframesrecorded++;
-
-			float old_size = GIF_GetSizeMB();
 			GIF_frame();
 
-			// size cap
-			if (cv_gif_maxsize.value)
-			{
-				float cur_size = GIF_GetSizeMB();
-				float diff = (cur_size - old_size) * 8;
-
-				if (cur_size >= (cv_gif_maxsize.value) - diff)
-				{
-					M_StopMovie();
-
-					// re-record
-					if (cv_gif_rolling.value)
-					{
-						M_StartMovie();
-						return;
-					}
-
-					CONS_Alert(CONS_NOTICE, M_GetText("Max movie size reached\n"));
-				}
-			}
-
-			return;
+			break;
 		case MM_APNG:
 #ifdef USE_APNG
 			{
@@ -1303,8 +1444,6 @@ void M_SaveFrame(void)
 					moviemode = MM_OFF;
 					return;
 				}
-
-				movieframesrecorded++;
 
 				if (rendermode == render_soft)
 				{
@@ -1324,16 +1463,33 @@ void M_SaveFrame(void)
 
 				if (apng_frames == PNG_UINT_31_MAX)
 				{
-					CONS_Alert(CONS_NOTICE, M_GetText("Max movie size reached\n"));
 					M_StopMovie();
 				}
 			}
 #else
 			moviemode = MM_OFF;
 #endif
-			return;
+			break;
 		default:
-			return;
+			break;
+	}
+
+	movieframesrecorded++;
+
+	// size cap
+	if (cv_gif_maxsize.value)
+	{
+		float cur_size = M_GetMovieSize();
+		float diff = (cur_size - old_size) * 8;
+
+		if (cur_size >= cv_gif_maxsize.value - diff)
+		{
+			M_StopMovie();
+
+			// re-record
+			if (cv_gif_rolling.value)
+				M_StartMovie();
+		}
 	}
 #endif
 }
@@ -1341,6 +1497,11 @@ void M_SaveFrame(void)
 void M_StopMovie(void)
 {
 #if NUMSCREENS > 2
+
+	// print the message first since we still have access to movie size
+	CONS_Printf(M_GetText("Movie mode disabled; wrote %d frames (%0.2f mb)\n"),
+		M_GetMovieFrames(), M_GetMovieSize());
+
 	switch (moviemode)
 	{
 		case MM_GIF:
@@ -1362,7 +1523,6 @@ void M_StopMovie(void)
 
 			fclose(apng_FILE);
 			apng_FILE = NULL;
-			CONS_Printf("aPNG closed; wrote %u frames\n", (UINT32)apng_frames);
 			apng_frames = 0;
 			break;
 #else
@@ -1374,35 +1534,31 @@ void M_StopMovie(void)
 			return;
 	}
 	moviemode = MM_OFF;
-	CONS_Printf(M_GetText("Movie mode disabled.\n"));
 #endif
 }
 
-INT32 M_RecordedFrames(void)
+INT32 M_GetMovieFrames(void)
 {
 	return movieframesrecorded;
 }
 
-float M_SavedSize(void)
+float M_GetMovieSize(void)
 {
-	if (!moviemode)
-		return 0;
+	const float kMb = 1024.f * 1024.f;
 	
 	switch (moviemode)
 	{	
 		case MM_GIF:
-			return GIF_GetSizeMB();
+			return GIF_GetSize() / kMb;
 		case MM_APNG:
 #ifdef USE_APNG
-		return ftell(apng_FILE);
+		return ftell(apng_FILE) / kMb;
 #else
 		return 0;
 #endif
 		default:
 			return 0;
 	}
-	// bruh
-	return 0;
 }
 
 // ==========================================================================

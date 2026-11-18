@@ -176,6 +176,10 @@ extern char logfilename[1024];
 // Use .kart extension addons
 //#define USE_KART
 
+// banpyura issues url
+#define BANPYURA_ISSUES_1 "https://github.com/GLideKS/"
+#define BANPYURA_ISSUES_2 "SRB2-Banpyura/issues"
+
 // Modification options
 // If you want to take advantage of the Master Server's ability to force clients to update
 // to the latest version, fill these out.  Otherwise, just comment out UPDATE_ALERT and leave

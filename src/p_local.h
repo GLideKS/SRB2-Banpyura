@@ -102,8 +102,6 @@ typedef struct camera_s
 	fixed_t radius;
 	fixed_t height;
 
-	fixed_t relativex;
-
 	// Momentums, used to update position.
 	fixed_t momx, momy, momz;
 } camera_t;
