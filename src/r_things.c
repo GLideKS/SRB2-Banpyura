@@ -1276,7 +1276,7 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				if (texcol_pixel < 0 || texcol_pixel >= pwidth)
 					continue;
 
-				dc.frac = (fixed_t)(texturecolumn64);
+				dc_frac = (fixed_t)(texturecolumn64);
 
 				sprtopscreen = (centeryfrac - FixedMul(dc_texturemid, FLOAT_TO_FIXED(f_yscale)));
 				float f_ylen = (float)(dc_affinebound.ylen);
@@ -1322,8 +1322,6 @@ static void R_DrawVisSprite(vissprite_t *vis)
 				
 				/*if (dc_yh >= baseclip && baseclip != -1)
 					dc_yh = baseclip;*/
-
-				dc_frac = texturecolumn;
 
 				colfunc();
 			}

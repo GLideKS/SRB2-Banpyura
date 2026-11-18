@@ -83,6 +83,13 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedMul(fixed_t a, fixed_t b)
 	return (fixed_t)(((UINT64)((INT64)a * b)) >> FRACBITS);
 }
 
+FUNCMATH FUNCINLINE static ATTRINLINE INT64 FixedMul64(INT64 a, INT64 b)
+{
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
+	return (INT64)(((UINT64)(a * b)) >> FRACBITS);
+}
+
 /**	\brief	The FixedDiv2 function
 
 	\param	a	fixed_t number
