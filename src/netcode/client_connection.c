@@ -412,7 +412,7 @@ static void CL_DrawDownloadAddonList(void)
 
 	if (fileneedednum > 0)
 	{
-		for (INT32 i = viewfiles; i < fileneedednum; i++)
+		for (INT32 i = 0; i < fileneedednum; i++)
 		{
 			if ((fileneeded[i].status != FS_NOTFOUND) && (fileneeded[i].status != FS_MD5SUMBAD))
 				continue;
@@ -420,7 +420,7 @@ static void CL_DrawDownloadAddonList(void)
 			addons++;
 			totalsize += fileneeded[i].totalsize;
 
-			if (count == MAXLISTADDONS || count == MAXLISTADDONS * 2)
+			if (i < viewfiles || count == MAXLISTADDONS || count == MAXLISTADDONS * 2)
 				continue; // continue here so that addons/totalsize are updated but nothing else is drawn
 
 			if (addons & 1)
