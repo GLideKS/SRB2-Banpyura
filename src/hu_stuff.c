@@ -513,7 +513,11 @@ static void DoSayCommand(SINT8 target, size_t usedargs, UINT8 flags)
 	// If over DEDI_MAXMSGLEN, notify them and bail!
 	if (dedicated && (flags & HU_SERVER_SAY) && strlen(msg) > DEDI_MAXMSGLEN)
 	{
+		#if (defined(_WIN32) && !(_MSC_VER < 1900)) // niko: MSVC >= 14.0 supports %zu from what I've found
 		CONS_Printf("NOTICE: Too long, not sending! (max: %i, length: %lu)\n", DEDI_MAXMSGLEN, strlen(msg));
+		#else
+		CONS_Printf("NOTICE: Too long, not sending! (max: %i, length: %zu)\n", DEDI_MAXMSGLEN, strlen(msg));
+		#endif
 		return;
 	}
 
