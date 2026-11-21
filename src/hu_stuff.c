@@ -2191,7 +2191,7 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, boolean notext, INT32 flags, INT
 	if (ping < UINT32_MAX && (!notext || vid.width >= 640)) // how sad, we're using a shit resolution.
 	{
 		if (timingout && (pnum == consoleplayer))
-			V_DrawRightAlignedSmallString(dx+16, y+4, V_ALLOWLOWERCASE|V_YELLOWMAP|flags, "Connection Lost");
+			V_DrawRightAlignedSmallString(dx+16, y+4, V_ALLOWLOWERCASE|V_YELLOWMAP|flags, "!");
 		else
 			V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", ping));
 	}
