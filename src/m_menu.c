@@ -6321,13 +6321,10 @@ static void M_StopMessage(INT32 choice)
 static void M_DrawImageDef(void)
 {
 	patch_t *patch = W_CachePatchName(currentMenu->menuitems[itemOn].text, PU_PATCH);
-	if (patch->width <= BASEVIDWIDTH)
-		V_DrawScaledPatch(0,0,0,patch);
-	else
-		V_DrawSmallScaledPatch(0,0,0,patch);
+	V_DrawBackgroundPatch(patch, 0);
 
 	if (currentMenu->numitems > 1)
-		V_DrawString(0,192,V_TRANSLUCENT, va("PAGE %d of %hd", itemOn+1, currentMenu->numitems));
+		V_DrawString(0,192,V_TRANSLUCENT|V_SNAPTOBOTTOM, va("PAGE %d of %hd", itemOn+1, currentMenu->numitems));
 }
 
 // Handles the ImageDefs.  Just a specialized function that
