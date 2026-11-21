@@ -701,6 +701,7 @@ void D_QuitNetGame(void)
 
 void CL_HandleTimeout(void)
 {
+	timingout = false;
 	LUA_HookBool(false, HOOK(GameQuit));
 	D_QuitNetGame();
 	CL_Reset();
