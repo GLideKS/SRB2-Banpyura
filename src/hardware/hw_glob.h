@@ -15,6 +15,7 @@
 
 #include "hw_defs.h"
 #include "hw_main.h"
+#include "../m_fixed.h"
 #include "../m_misc.h"
 #include "../p_setup.h"
 
@@ -84,6 +85,28 @@ typedef struct gl_vissprite_s
 	UINT8 translucency;       //alpha level 0-255
 
 	angle_t angle; // for splats
+
+	// Affine nonsense
+	struct {
+		// Vertex points for the affine sprite to be drawn to.
+		//
+		//  4--3
+		//  | /|
+		//  |/ |
+		//  1--2
+		f_vector2_t p1, p2, p3, p4;
+
+		// The "root", or center, of the affine sprite
+		polyvertex_t root;
+
+		// Bounding point (leftmost and highest point), to resolve clipping
+		polyvertex_t bounding_point;
+
+		// Sine/cosine multiplier, used for billboarding.
+		float patchsin, patchcos;
+
+		affine_t transform; // The actual affine transformation.
+	} affine;
 
 	//Hurdler: 25/04/2000: now support colormap in hardware mode
 	UINT8 *colormap;

@@ -190,6 +190,12 @@ consvar_t cv_renderstats = CVAR_INIT ("renderstats", "Off", 0, CV_OnOff, NULL);
 
 consvar_t cv_flashes = CVAR_INIT ("flashes", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
 
+consvar_t cv_affinerotation = CVAR_INIT("affinerotation", "On", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+consvar_t cv_fakerollangle = CVAR_INIT ("fakerollangle", "Off", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+
+consvar_t cv_affineprescale = CVAR_INIT ("affineprescale", "Off", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+consvar_t cv_affinemosaic = CVAR_INIT ("affinemosaic", "Off", CV_SAVE|CV_CLIENT, CV_OnOff, NULL);
+
 void SplitScreen_OnChange(void)
 {
 	if (!cv_debug && netgame)
@@ -1711,6 +1717,11 @@ void R_RegisterEngineStuff(void)
 	CV_RegisterVar(&cv_cam_saveheight[0][1]);
 	CV_RegisterVar(&cv_cam_saveheight[1][0]);
 	CV_RegisterVar(&cv_cam_saveheight[1][1]);
+
+	CV_RegisterVar(&cv_affinerotation);
+	CV_RegisterVar(&cv_fakerollangle);
+	CV_RegisterVar(&cv_affineprescale);
+	CV_RegisterVar(&cv_affinemosaic);
 
 	CV_RegisterVar(&cv_showhud);
 	CV_RegisterVar(&cv_translucenthud);

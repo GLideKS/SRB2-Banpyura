@@ -83,6 +83,13 @@ FUNCMATH FUNCINLINE static ATTRINLINE fixed_t FixedMul(fixed_t a, fixed_t b)
 	return (fixed_t)(((UINT64)((INT64)a * b)) >> FRACBITS);
 }
 
+FUNCMATH FUNCINLINE static ATTRINLINE INT64 FixedMul64(INT64 a, INT64 b)
+{
+	// Need to cast to unsigned before shifting to avoid undefined behaviour
+	// for negative integers
+	return (INT64)(((UINT64)(a * b)) >> FRACBITS);
+}
+
 /**	\brief	The FixedDiv2 function
 
 	\param	a	fixed_t number
@@ -255,6 +262,13 @@ typedef struct
 	fixed_t x;
 	fixed_t y;
 } vector2_t;
+
+// Floating-point version, used sparingly, primarily in rendering
+typedef struct
+{
+	float x;
+	float y;
+} f_vector2_t;
 
 vector2_t *FV2_Load(vector2_t *vec, fixed_t x, fixed_t y);
 vector2_t *FV2_UnLoad(vector2_t *vec, fixed_t *x, fixed_t *y);

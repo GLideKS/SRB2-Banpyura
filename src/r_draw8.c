@@ -2507,3 +2507,190 @@ void R_DrawColumnShadowed_8(void)
 	if (dc_yl <= realyh)
 		(colfuncs[BASEDRAWFUNC])();		// R_DrawWallColumn_8 for the appropriate architecture
 }
+
+/**	\brief The R_DrawAffineColumnTemplate function
+	this code is directly translated from c++slop
+*/
+
+enum DrawColumnType
+{
+	DC_BASIC = 0x0000,
+	DC_COLORMAP = 0x0001,
+	DC_TRANSMAP = 0x0002,
+	DC_BRIGHTMAP = 0x0004,
+	DC_HOLES = 0x0008,
+	DC_LIGHTLIST = 0x0010,
+	//DC_DIRECT = 0x0020, // draw our columns directly to screen!
+};
+
+// Function flow: Holes -> Translation -> Brightmap -> Colormap -> Translucency
+// "Why are these in nested functions for standard columns?" Uhhhhhh iunno lol
+// I make-a da code-a
+
+static UINT16 R_DrawColumnAffinePixel(UINT16 type, UINT8* dest, INT32 bit)
+{
+	const UINT16 pixel = ((const UINT16 *)(dc_source))[bit];
+
+	UINT8 col = (UINT8)(pixel & 0xff);
+
+	if (pixel < 0xff00)
+	{
+		return 0;
+	}
+
+	if (type & DC_HOLES)
+	{
+		if (col == TRANSPARENTPIXEL)
+		{
+			return 0;
+		}
+	}
+
+	if (type & DC_COLORMAP)
+	{
+		// Remap to the current translation
+		col = dc_translation[col];
+	}
+
+	col = dc_colormap[col];
+
+	if (type & DC_TRANSMAP)
+	{
+		// Pixel is translucent
+		col = *(dc_transmap + (col << 8) + (*dest));
+	}
+
+	*dest = col;
+
+	return (0xff00 | col);
+}
+
+static void R_DrawAffineColumnTemplate(UINT16 type)
+{
+	INT32 count;
+	register UINT8* dest;
+
+	count = dc_yh - dc_yl;
+
+	if (count < 0) // Zero length, column does not exceed a pixel.
+		return;
+
+#ifdef RANGECHECK
+	if ((unsigned)dc_x >= (unsigned)vid.width || dc_yl < 0 || dc_yh >= vid.height)
+		return;
+#endif
+
+	// Framebuffer destination address.
+	dest = &topleft[dc_yl * vid.width + dc_x];
+
+	count++;
+
+	// Inner loop that does the actual texture mapping, e.g. a DDA-like scaling.
+	// This is as fast as it gets.
+	{
+		// killough 2/1/98: more performance tuning
+
+		// Framebuffer destination address.
+		// SoM: MAGIC
+
+		const INT32 stride = vid.width; // SoM: Oh, Oh it's MAGIC! You know...
+
+		const affine_t* transform = &dc_affine;
+		const affine_bounding_t* bounds = &dc_affinebound;
+
+		const fixed_t a = transform->a;
+		const fixed_t b = transform->b;
+		const fixed_t c = transform->c;
+		const fixed_t d = transform->d;
+		fixed_t cx = transform->ox;
+		fixed_t cy = transform->oy;
+
+		const INT32 pw = dc_sourcelength, ph = dc_texheight;
+
+		const boolean vflip = (dc_affineystep < 0);
+		const fixed_t ystep_delta = abs(dc_affineystep);
+
+		fixed_t ydiff = (bounds->yup * FRACUNIT) - cy;
+		fixed_t xdiff = (bounds->xleft * FRACUNIT) - cx;
+
+		xdiff -= (xdiff ? FRACUNIT : 0);
+		ydiff -= (ydiff ? FRACUNIT : 0);
+
+		// Offset our X and Y positions by the bounding differences.
+		fixed_t cxx = cx + xdiff + dc_affineoffset.x;
+		fixed_t cyy = cy + ydiff + dc_affineoffset.y;
+
+		// If we're smaller than usual, mosaic isn't necessary.
+
+		const float y_mosaic = max(1.0f, dc_affinemosaic.y);
+		const float x_mosaic = max(1.0f, dc_affinemosaic.x);
+
+		const boolean mosaic_on = cv_affinemosaic.value;
+		const boolean xmosaic_on = (FLOAT_TO_FIXED(x_mosaic) > FRACUNIT);
+		const boolean ymosaic_on = (FLOAT_TO_FIXED(y_mosaic) > FRACUNIT);
+
+		fixed_t usefrac = dc_frac;
+
+		if (mosaic_on && xmosaic_on)
+		{
+			usefrac = FLOAT_TO_FIXED((INT32)(FIXED_TO_FLOAT(dc_frac) / x_mosaic) * x_mosaic);
+		}
+
+		float ypx = 0.0f;
+
+		// yoinked from NovaSquirrel's mode 7 0preview
+		// ...which is in turn yoinked from Mesen's S-PPU code
+		// i can't do matrix math to save my life :face_holding_back_tears:
+		// (m7xofs and m7yofs are already factored in by destbase)
+		fixed_t ux = FixedMul(b, -cyy) + FixedMul(a, -cxx) + FixedMul(a, usefrac) + cx;
+		fixed_t uy = FixedMul(d, -cyy) + FixedMul(c, -cxx) + FixedMul(c, usefrac) + cy;
+		float ux_base = FIXED_TO_FLOAT(ux);
+		float uy_base = FIXED_TO_FLOAT(uy);
+		float f_b = FIXED_TO_FLOAT(FixedMul(b, ystep_delta));
+		float f_d = FIXED_TO_FLOAT(FixedMul(d, ystep_delta));
+
+		for (; count > 0; dest += stride, --count)
+		{
+			ypx += 1.0f;
+
+			const INT32 srcx = ux >> FRACBITS;
+			const INT32 srcy = (vflip) ? (ph - (uy >> FRACBITS)) : (uy >> FRACBITS);
+			INT32 y_real = (INT32)(ypx);
+
+			if (mosaic_on && ymosaic_on)
+			{
+				y_real = ((INT32)(ypx / y_mosaic) * y_mosaic);
+			}
+
+			ux = FLOAT_TO_FIXED(ux_base + (f_b * y_real));
+			uy = FLOAT_TO_FIXED(uy_base + (f_d * y_real));
+
+			if (srcx < 0 || srcx >= pw || srcy < 0 || srcy >= ph)
+			{
+				continue;
+			}
+
+			R_DrawColumnAffinePixel(type, dest, srcy * pw + srcx);
+		}
+	}
+}
+
+void R_DrawAffineColumn_8(void)
+{
+	R_DrawAffineColumnTemplate(DC_BASIC);
+}
+
+void R_DrawTranslatedAffineColumn_8(void)
+{
+	R_DrawAffineColumnTemplate(DC_COLORMAP);
+}
+
+void R_DrawTranslucentAffineColumn_8(void)
+{
+	R_DrawAffineColumnTemplate(DC_TRANSMAP);
+}
+
+void R_DrawTranslatedTranslucentAffineColumn_8(void)
+{
+	R_DrawAffineColumnTemplate(DC_COLORMAP | DC_TRANSMAP);
+}

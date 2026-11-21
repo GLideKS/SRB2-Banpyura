@@ -51,6 +51,18 @@ INT32 dc_x = 0, dc_yl = 0, dc_yh = 0;
 fixed_t dc_iscale, dc_texturemid;
 UINT8 *dc_source;
 
+INT32 dc_sourcelength; // romoney5: unused
+
+affine_t dc_affine;
+affine_bounding_t dc_affinebound;
+f_vector2_t dc_affineoffset;
+f_vector2_t dc_affinemosaic;
+fixed_t dc_affineystep;
+fixed_t dc_frac;
+
+f_vector2_t visoffs;
+f_vector2_t rotoffset;
+
 // -----------------------
 // translucency stuff here
 // -----------------------

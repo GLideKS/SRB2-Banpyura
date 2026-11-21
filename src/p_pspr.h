@@ -90,6 +90,12 @@
 /// \brief Frame flags: Flip sprite horizontally
 #define FF_HORIZONTALFLIP 0x02000000
 
+/// \brief Frame flags: Turns off Mode 7-style scaling and rotation
+#define FF_NOAFFINE 0x04000000
+
+/// \brief Frame flags: Enables "affine papersprites"
+#define FF_AFFINEPAPER 0x08000000
+
 /// \brief Frame flags - Animate: Simple stateless animation
 #define FF_ANIMATE 0x10000000
 /// \brief Frame flags - Animate: Sync animation to global timer (mutually exclusive with below, currently takes priority)
