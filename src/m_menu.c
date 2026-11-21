@@ -12,6 +12,7 @@
 /// \file  m_menu.c
 /// \brief XMOD's extremely revamped menu system.
 
+#include "r_main.h"
 #include "screen.h"
 #ifdef __GNUC__
 #include <unistd.h>
@@ -1564,10 +1565,11 @@ static menuitem_t OP_BanpyuraOptionsMenu[] =
 	{IT_STRING | IT_CVAR,		NULL, "Minimum Delay",       		    &cv_mindelay,          93},
 	{IT_STRING | IT_CVAR,		NULL, "Gentlemen's Delay",       	  &cv_gentlemens,          98},
 	{IT_STRING | IT_CVAR, 		NULL, "Show Addon Info",	       &cv_showaddoninfo,		   103},
+	{IT_STRING | IT_CVAR, 		NULL, "Server View Music",	       &cv_servermusic,		   	   108},
 
 #ifdef HWRENDER
-	{IT_HEADER, 				NULL, "Rendering (OpenGL)", 			        NULL,		   113},
-	{IT_STRING|IT_CVAR,         NULL, "Light Dithering",     	   &cv_gllightdither,          119},
+	{IT_HEADER, 				NULL, "Rendering (OpenGL)", 			        NULL,		   118},
+	{IT_STRING|IT_CVAR,         NULL, "Light Dithering",     	   &cv_gllightdither,          124},
 #endif
 };
 

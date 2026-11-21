@@ -77,6 +77,19 @@ static const char *GetChatColorFromVideoFlag(INT32 flag)
 	}
 }
 
+
+// Server View Music, just like SRB2-Edit does, but I took out the unnecessary stuff
+static const char* servmus_1 = "SRVMS1";
+static const char* servmus_2 = "SRVMS2";
+
+static void ChangeServMusic(const char* musname)
+{
+	if (!(cv_servermusic.value))
+		return;
+	
+	S_ChangeMusicInternal(S_MusicExists(musname, true, true) ? musname : "_chsel", true);
+}
+
 static boolean IsDownloadingFile(void)
 {
 	if (cl_mode == CL_DOWNLOADFILES || cl_mode == CL_DOWNLOADHTTPFILES)
@@ -1099,6 +1112,7 @@ static void DoLoadFiles(void)
 	Snake_Free(&snake);
 
 	cl_mode = CL_LOADFILES;
+	ChangeServMusic(servmus_2);
 }
 
 static void AbortConnection(void)
@@ -1561,6 +1575,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				viewserver_toggle = false;
 				viewserver_scroll = 0;
 				cl_mode = CL_VIEWSERVER;
+				ChangeServMusic(servmus_1);
 				CL_CheckAddonTypes();
 			}
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
