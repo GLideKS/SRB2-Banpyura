@@ -78,6 +78,19 @@ static const char *GetChatColorFromVideoFlag(INT32 flag)
 	}
 }
 
+
+// Server View Music, just like SRB2-Edit does, but I took out the unnecessary stuff
+static const char* servmus_1 = "SRVMS1";
+static const char* servmus_2 = "SRVMS2";
+
+static void ChangeServMusic(const char* musname)
+{
+	if (!(cv_servermusic.value))
+		return;
+	
+	S_ChangeMusicInternal(S_MusicExists(musname, true, true) ? musname : "_chsel", true);
+}
+
 static boolean IsDownloadingFile(void)
 {
 	if (cl_mode == CL_DOWNLOADFILES || cl_mode == CL_DOWNLOADHTTPFILES)
@@ -431,40 +444,37 @@ static void CL_DrawDownloadAddonList(void)
 
 #define charsonside 18
 #define maxcharlen (charsonside * 2) + 3 // 3 for the 3 dots
-	INT32 i;
 	INT32 count = 0;
 	INT32 x = 14;
 	INT32 y = ypos + 68;
 	INT32 height = 10;
 	INT32 totalsize = 0;
-	fileneeded_t filelist[fileneedednum];
-	INT32 filelistsize = 0;
-	for (int j = 0; j < fileneedednum; j++)
-	{
-		if ((fileneeded[j].status != FS_NOTFOUND) && (fileneeded[j].status != FS_MD5SUMBAD))
-			continue;
+	INT32 addons = 0;
 
-		filelist[filelistsize] = fileneeded[j];
-		filelistsize++;
-		totalsize += fileneeded[j].totalsize;
-	}
-	totalsize = (float)totalsize;
-
-	if (filelistsize > 0)
+	if (fileneedednum > 0)
 	{
-		for (i = viewfiles; i < filelistsize; i++)
+		for (INT32 i = 0; i < fileneedednum; i++)
 		{
-			if (i & 1)
+			if ((fileneeded[i].status != FS_NOTFOUND) && (fileneeded[i].status != FS_MD5SUMBAD))
+				continue;
+
+			addons++;
+			totalsize += fileneeded[i].totalsize;
+
+			if (i < viewfiles || count == MAXLISTADDONS || count == MAXLISTADDONS * 2)
+				continue; // continue here so that addons/totalsize are updated but nothing else is drawn
+
+			if (addons & 1)
 				V_DrawFill(x - 2, y - 1, 290, height, (cv_menubgcolor.value - 3));
 			else
 				V_DrawFill(x - 2, y - 1, 290, height, (cv_menubgcolor.value - 2));
 			
 			INT32 color = 0; // new addon
-			if (filelist[i].status == FS_MD5SUMBAD)
+			if (fileneeded[i].status == FS_MD5SUMBAD)
 				color = V_SKYMAP; // addon update
 
 			char tempname[28];
-			char *filename = filelist[i].filename;
+			char *filename = fileneeded[i].filename;
 			filename += strlen(filename) - nameonlylength(filename);
 			if (strlen(filename) > (sizeof(tempname) - 1)) // too long to display fully
 			{
@@ -478,11 +488,11 @@ static void CL_DrawDownloadAddonList(void)
 				strlcpy(tempname, filename, sizeof(tempname));
 			}
 
-			V_DrawThinString(x, y + 1, V_ALLOWLOWERCASE|V_6WIDTHSPACE|MENUCOLOR, va("%.2d", i + 1));
+			V_DrawThinString(x, y + 1, V_ALLOWLOWERCASE|V_6WIDTHSPACE|MENUCOLOR, va("%.2d", addons));
 
 			V_DrawThinString(x + 6 * 3, y + 1, V_ALLOWLOWERCASE|V_6WIDTHSPACE|color, filename);
 
-			float file_size = ((float)filelist[i].totalsize);
+			float file_size = ((float)fileneeded[i].totalsize);
 			const char *size_mode = "B";
 			if (file_size >= (1024.0f * 1024.0f))
 			{
@@ -498,11 +508,9 @@ static void CL_DrawDownloadAddonList(void)
 
 			y += height;
 			count++;
-			if (count == MAXLISTADDONS)
-				break;
-			if (count == MAXLISTADDONS * 2)
-				break;
 		}
+
+		totalsize = (float)totalsize;
 
 		const char *size_mode = "B";
 		if (totalsize >= (1024.0f * 1024.0f))
@@ -517,15 +525,15 @@ static void CL_DrawDownloadAddonList(void)
 		}
 
 		V_DrawString(12, ypos + 58, V_ALLOWLOWERCASE|MENUCOLOR,
-			va("Download %i addons?", filelistsize));
+			va("Download %i addons?", addons));
 		V_DrawRightAlignedString(BASEVIDWIDTH - x - 3, ypos + 58, V_ALLOWLOWERCASE|MENUCOLOR, va("%.1f%s total", (float)totalsize, size_mode));
 
-		if (filelistsize >= MAXLISTADDONS)
+		if (addons >= MAXLISTADDONS)
 		{
 			if (viewfiles)
 				V_DrawRightAlignedThinString(BASEVIDWIDTH - 10, (ypos + 58 + 10) - ((ccstime % 8) / 5), MENUCOLOR, "\x1A");
 
-			if (viewfiles != (filelistsize - ADDONSCROLLLIMIT))
+			if (viewfiles != (addons - ADDONSCROLLLIMIT))
 				V_DrawRightAlignedThinString(BASEVIDWIDTH - 10, (y - 10) + ((ccstime % 8) / 5), MENUCOLOR, "\x1B");
 		}
 	}
@@ -547,7 +555,7 @@ static void CL_DrawDownloadAddonList(void)
 		V_ALLOWLOWERCASE, va("%sESC%s - Cancel", GetChatColorFromVideoFlag(MENUCOLOR), "\x80")
 	);
 
-	if (filelistsize >= MAXLISTADDONS)
+	if (addons >= MAXLISTADDONS)
 	{
 		V_DrawCenteredThinString(
 			BASEVIDWIDTH/2, BASEVIDHEIGHT - (ypos + 15),
@@ -1107,6 +1115,7 @@ static void DoLoadFiles(void)
 	Snake_Free(&snake);
 
 	cl_mode = CL_LOADFILES;
+	ChangeServMusic(servmus_2);
 }
 
 static void AbortConnection(void)
@@ -1180,23 +1189,6 @@ static void BeginDownload(boolean direct)
 	}
 }
 
-/*static void M_ConfirmConnect(event_t *ev)
-{
-	if (ev->type == ev_keydown)
-	{
-		if (ev->key == ' ' || ev->key == 'y' || ev->key == KEY_ENTER || ev->key == KEY_JOY1)
-		{
-			BeginDownload(UseDirectDownloader());
-			M_ClearMenus(true);
-		}
-		else if (ev->key == 'n' || ev->key == KEY_ESCAPE || ev->key == KEY_JOY1 + 3)
-		{
-			cl_mode = CL_ABORTED;
-			M_ClearMenus(true);
-		}
-	}
-}*/
-
 static const char *GetPrintableFileSize(UINT64 filesize)
 {
 	static char downloadsize[32];
@@ -1228,26 +1220,6 @@ static void ShowDownloadConsentMessage(void)
 			totalsize += fileneeded[i].totalsize;
 	}
 	filedownload.totalsize = totalsize;
-
-	/*
-	const char *downloadsize = GetPrintableFileSize(totalsize);
-
-	if (serverisfull)
-		M_StartMessage(va(M_GetText(
-			"This server is full!\n"
-			"Download of %s of additional\ncontent is required to join.\n"
-			"\n"
-			"You may download server addons,\nand wait for a slot.\n"
-			"\n"
-			"Press ENTER to continue\nor ESC to cancel.\n"
-		), downloadsize), M_ConfirmConnect, MM_EVENTHANDLER);
-	else
-		M_StartMessage(va(M_GetText(
-			"Download of %s of additional\ncontent is required to join.\n"
-			"\n"
-			"Press ENTER to continue\nor ESC to cancel.\n"
-		), downloadsize), M_ConfirmConnect, MM_EVENTHANDLER);
-	*/
 
 	cl_mode = CL_CONFIRMCONNECT;
 	curfadevalue = 0;
@@ -1344,18 +1316,11 @@ static boolean CL_FinishedFileList(void)
 	{
 		if (serverisfull)
 		{
-			/*M_StartMessage(M_GetText(
-				"This server is full!\n"
-				"\n"
-				"You may load server addons (if any), and wait for a slot.\n"
-				"\n"
-				"Press ENTER to continue\nor ESC to cancel.\n\n"
-			), M_ConfirmConnect, MM_EVENTHANDLER);*/
 			cl_mode = CL_CONFIRMCONNECT;
 			curfadevalue = 0;
 		}
 		else
-			cl_mode = CL_LOADFILES;
+			DoLoadFiles();
 	}
 	else
 	{
@@ -1615,6 +1580,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				viewserver_toggle = false;
 				viewserver_scroll = 0;
 				cl_mode = CL_VIEWSERVER;
+				ChangeServMusic(servmus_1);
 				CL_CheckAddonTypes();
 			}
 			else if (fileneedednum != cl_lastcheckedfilecount || I_GetTime() >= *asksent)
@@ -1714,7 +1680,7 @@ static boolean CL_ServerConnectionTicker(const char *tmpsave, tic_t *oldtic, tic
 				break;
 
 		case CL_CONNECTED:
-		case CL_CONFIRMCONNECT: //logic is handled by M_ConfirmConnect
+		case CL_CONFIRMCONNECT: //logic is handled by CL_CONFIRMCONNECT
 		default:
 			break;
 

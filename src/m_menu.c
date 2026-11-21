@@ -12,6 +12,7 @@
 /// \file  m_menu.c
 /// \brief XMOD's extremely revamped menu system.
 
+#include "r_main.h"
 #include "screen.h"
 #ifdef __GNUC__
 #include <unistd.h>
@@ -1571,10 +1572,11 @@ static menuitem_t OP_BanpyuraOptionsMenu[] =
 	{IT_STRING | IT_CVAR,		NULL, "Minimum Delay",       		    &cv_mindelay,          93},
 	{IT_STRING | IT_CVAR,		NULL, "Gentlemen's Delay",       	  &cv_gentlemens,          98},
 	{IT_STRING | IT_CVAR, 		NULL, "Show Addon Info",	       &cv_showaddoninfo,		   103},
+	{IT_STRING | IT_CVAR, 		NULL, "Server View Music",	       &cv_servermusic,		   	   108},
 
 #ifdef HWRENDER
-	{IT_HEADER, 				NULL, "Rendering (OpenGL)", 			        NULL,		   113},
-	{IT_STRING|IT_CVAR,         NULL, "Light Dithering",     	   &cv_gllightdither,          119},
+	{IT_HEADER, 				NULL, "Rendering (OpenGL)", 			        NULL,		   118},
+	{IT_STRING|IT_CVAR,         NULL, "Light Dithering",     	   &cv_gllightdither,          124},
 #endif
 };
 
@@ -6384,13 +6386,10 @@ static void M_StopMessage(INT32 choice)
 static void M_DrawImageDef(void)
 {
 	patch_t *patch = W_CachePatchName(currentMenu->menuitems[itemOn].text, PU_PATCH);
-	if (patch->width <= BASEVIDWIDTH)
-		V_DrawScaledPatch(0,0,0,patch);
-	else
-		V_DrawSmallScaledPatch(0,0,0,patch);
+	V_DrawBackgroundPatch(patch, 0);
 
 	if (currentMenu->numitems > 1)
-		V_DrawString(0,192,V_TRANSLUCENT, va("PAGE %d of %hd", itemOn+1, currentMenu->numitems));
+		V_DrawString(0,192,V_TRANSLUCENT|V_SNAPTOBOTTOM, va("PAGE %d of %hd", itemOn+1, currentMenu->numitems));
 }
 
 // Handles the ImageDefs.  Just a specialized function that

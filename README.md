@@ -23,6 +23,8 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - Player names on the rankings hud always use a thin font
 - Servers on the Master Server list has a background (SRB2-Edit)
 - Server information display! shows players, new download confirmation, addon listing, current map. (Lugent)
+- - Also plays a music when showing the server information (`SRVMS1`) and loading files (`SRVMS2`). You can override the music loading an addon containing `SRVMS1` and `SRVMS2` as the music.
+- - This feature is toggleable with `serverviewmusic` command.
 - "Quit Game" and "Abort" red colored
 - OpenGL's black console color to be a proper black and gray is an color option (SRB2 v2.2.16 Nightly)
 - `cecho` messages now prints on console.
@@ -47,7 +49,7 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - Added total progress bar while downloading addons from a server.
 - `clearscores` command now blames the admin that used it rather than blaming the host.
 - `addfile`/`addfolder` requests from administrators are logged.
-- `allowfilerequests`: If off, addfile/addfodler requests from admins will be silently ignored (they are still logged). On by default.
+- `allowfilerequests`: If off, addfile/addfolder requests from admins will be silently ignored (they are still logged). On by default.
 
 ### Lua
 
