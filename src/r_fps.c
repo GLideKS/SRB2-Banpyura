@@ -316,26 +316,6 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 		out->spriteyscale = mobj->spriteyscale;
 		out->spritexoffset = mobj->spritexoffset;
 		out->spriteyoffset = mobj->spriteyoffset;
-		out->flipped = P_MobjFlip(mobj) == -1;
-		if (mobj->floorspriteslope)
-		{
-			pslope_t *slope = mobj->floorspriteslope;
-			out->zdelta = slope->zdelta;
-			out->ox = slope->o.x;
-			out->oy = slope->o.y;
-			out->oz = slope->o.z;
-			out->dx = slope->d.x;
-			out->dy = slope->d.y;
-		}
-		else
-		{
-			out->zdelta = 0;
-			out->ox = 0;
-			out->oy = 0;
-			out->oz = 0;
-			out->dx = 0;
-			out->dy = 0;
-		}
 		return;
 	}
 
@@ -377,27 +357,6 @@ void R_InterpolateMobjState(mobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
 	out->pitch = mobj->resetinterp ? mobj->pitch : R_LerpAngle(mobj->old_pitch, mobj->pitch, frac);
 	out->roll = mobj->resetinterp ? mobj->roll : R_LerpAngle(mobj->old_roll, mobj->roll, frac);
 	out->spriteroll = mobj->resetinterp ? mobj->spriteroll : R_LerpAngle(mobj->old_spriteroll, mobj->spriteroll, frac);
-	out->flipped = P_MobjFlip(mobj) == -1;
-
-	if (mobj->floorspriteslope)
-	{
-		pslope_t *slope = mobj->floorspriteslope;
-		out->zdelta = mobj->resetinterp ? slope->zdelta : R_LerpFixed(mobj->old_zdelta, slope->zdelta, frac);
-		out->ox = mobj->resetinterp ? slope->o.x : R_LerpFixed(mobj->old_ox, slope->o.x, frac);
-		out->oy = mobj->resetinterp ? slope->o.y : R_LerpFixed(mobj->old_oy, slope->o.y, frac);
-		out->oz = mobj->resetinterp ? slope->o.z : R_LerpFixed(mobj->old_oz, slope->o.z, frac);
-		out->dx = mobj->resetinterp ? slope->d.x : R_LerpFixed(mobj->old_dx, slope->d.x, frac);
-		out->dy = mobj->resetinterp ? slope->d.y : R_LerpFixed(mobj->old_dy, slope->d.y, frac);
-	}
-	else
-	{
-		out->zdelta = 0;
-		out->ox = 0;
-		out->oy = 0;
-		out->oz = 0;
-		out->dx = 0;
-		out->dy = 0;
-	}
 }
 
 void R_InterpolatePrecipMobjState(precipmobj_t *mobj, fixed_t frac, interpmobjstate_t *out)
@@ -925,27 +884,6 @@ void R_ResetMobjInterpolationState(mobj_t *mobj)
 	{
 		mobj->player->old_drawangle2 = mobj->player->old_drawangle;
 		mobj->player->old_drawangle = mobj->player->drawangle;
-	}
-
-	if (mobj->floorspriteslope)
-	{
-		pslope_t *slope = mobj->floorspriteslope;
-
-		mobj->old_zdelta = slope->zdelta;
-		mobj->old_ox = slope->o.x;
-		mobj->old_oy = slope->o.y;
-		mobj->old_oz = slope->o.z;
-		mobj->old_dx = slope->d.x;
-		mobj->old_dy = slope->d.y;
-	}
-	else
-	{
-		mobj->old_zdelta = 0;
-		mobj->old_ox = 0;
-		mobj->old_oy = 0;
-		mobj->old_oz = 0;
-		mobj->old_dx = 0;
-		mobj->old_dy = 0;
 	}
 
 	mobj->resetinterp = false;

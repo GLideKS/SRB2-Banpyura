@@ -131,6 +131,7 @@ extern consvar_t cv_ffloorclip, cv_spriteclip;
 extern consvar_t cv_secbright;
 
 extern consvar_t cv_flashes;
+extern consvar_t cv_servermusic;
 
 extern boolean r_renderwalls;
 extern boolean r_renderfloors;

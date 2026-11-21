@@ -405,7 +405,9 @@ void Y_IntermissionDrawer(void)
 		return;
 
 	if (useinterpic)
-		V_DrawScaledPatch(0, 0, 0, interpic);
+	{	
+		V_DrawBackgroundPatch(interpic, 0);
+	}
 	else if (!usetile)
 	{
 		if (rendermode == render_soft && usebuffer)

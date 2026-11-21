@@ -26,6 +26,7 @@
 #include "../doomstat.h"
 #include "../doomdef.h"
 #include "../r_local.h"
+#include "../m_misc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -389,6 +390,9 @@ void Command_Kick(void)
 
 void Command_connect(void)
 {
+	// By default, clear the saved address that we'd save after succesfully joining just to be sure:
+	joinedIP[0] = '\0';
+
 	if (COM_Argc() < 2 || *COM_Argv(1) == 0)
 	{
 		CONS_Printf(M_GetText(
@@ -417,6 +421,14 @@ void Command_connect(void)
 	else
 */
 	{
+
+		// quickly reconnect to the last joined server
+		if (!stricmp(COM_Argv(1), "last"))
+		{
+			COM_BufAddText(va("connect %s\n", joinedIPlist[0][0]));
+			return;
+		}
+
 		// used in menu to connect to a server in the list
 		if (netgame && !stricmp(COM_Argv(1), "node"))
 		{

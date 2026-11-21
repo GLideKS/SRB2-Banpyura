@@ -3495,7 +3495,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		renderflags_t renderflags = spr->renderflags;
 
 		if (spr->rotateflags & SRF_3D || renderflags & RF_NOSPLATBILLBOARD)
-			angle = spr->mobj->player ? R_InterpolateAngle(spr->mobj->old_angle, spr->mobj->angle) : spr->angle;
+			angle = spr->angle;
 		else
 			angle = viewangle;
 

@@ -480,7 +480,8 @@ FUNCNORETURN static void I_QuitStatus(int status)
 		abort();
 
 	is_quitting = true;
-	M_SaveConfig(NULL); //save game config, cvars..
+	M_SaveConfig(NULL, false); //save game config, cvars..
+	M_SaveConfig(NULL, true);  //and save Banpyura's stuff...
 	D_SaveBan(); // save the ban list
 	G_SaveGameData(clientGamedata); // Tails 12-08-2002
 	//added:16-02-98: when recording a demo, should exit using 'q' key,
@@ -632,7 +633,7 @@ void I_UpdateMumble(const mobj_t *mobj, const listener_t listener)
 		return;
 
 	if(mumble->uiVersion != 2) {
-		wcsncpy(mumble->name, L"SRB2 Banpyura "VERSIONSTRINGW, 256);
+		wcsncpy(mumble->name, L"SRB2 "VERSIONSTRINGW, 256);
 		wcsncpy(mumble->description, L"Sonic Robo Blast 2 with integrated Mumble Link support.", 2048);
 		mumble->uiVersion = 2;
 	}

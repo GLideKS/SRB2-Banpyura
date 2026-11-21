@@ -43,6 +43,29 @@ float M_GetMovieSize(void);
 
 // the file where game vars and settings are saved
 #define CONFIGFILENAME "config.cfg"
+// cvars with CV_CLIENT (if they have CV_SAVE) go here
+#define BANPCONFIGFILENAME "bnpconfig.cfg"
+
+// The file where we'll save the last IPs we joined
+#define IPLOGFILE "savedips.txt"
+#define IPLOGFILESEP "\x90"
+#define NUMLOGIP 11
+#define MAX_LOGIP 255
+
+// Array where we'll store addresses to display for last servers joined
+// {address, servame}
+extern char joinedIPlist[NUMLOGIP][3][MAX_LOGIP];
+
+// Keep the address we're joining in mind until we've finished joining.
+// Since we don't wanna add an IP address we aren't even sure worked out.
+extern char joinedIP[MAX_LOGIP];
+// Attempting to rejoin a server from the rejoin menu
+
+void M_InitJoinedIPArray(void);
+void M_AddToJoinedIPs(char *address, char *date, char *servname);
+boolean M_RemoveJoinedIP(UINT8 index);
+void M_SaveJoinedIPs(void);
+void M_LoadJoinedIPs(void);
 
 INT32 M_MapNumber(char first, char second);
 
@@ -76,7 +99,7 @@ void Command_ChangeConfig_f(void);
 
 void M_FirstLoadConfig(void);
 // save game config: cvars, aliases..
-void M_SaveConfig(const char *filename);
+void M_SaveConfig(const char *filename, boolean forbanpyura);
 
 INT32 axtoi(const char *hexStg);
 
@@ -125,5 +148,6 @@ int M_RoundUp(double number);
 
 #include "w_wad.h"
 extern char configfile[MAX_WADPATH];
+extern char bnpconfigfile[MAX_WADPATH];
 
 #endif

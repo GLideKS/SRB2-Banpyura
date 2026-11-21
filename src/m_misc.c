@@ -174,6 +174,59 @@ boolean takescreenshot = false; // Take a screenshot this tic
 moviemode_t moviemode = MM_OFF;
 static INT32 movieframesrecorded = 0;
 
+char joinedIPlist[NUMLOGIP][3][MAX_LOGIP];
+char joinedIP[MAX_LOGIP];
+
+// This initializes the above array to have NULL everywhere it should.
+void M_InitJoinedIPArray(void)
+{
+	for (UINT8 index = 0; index < NUMLOGIP; index++)
+		joinedIPlist[index][0][0] = joinedIPlist[index][1][0] = joinedIPlist[index][2][0] = '\0';
+}
+
+// This adds an entry to the above array
+void M_AddToJoinedIPs(char *address, char *date, char *servname)
+{
+	UINT8 index = 0;
+	if ((stricmp(address, "localhost") == 0) || (stricmp(address, "self") == 0))
+		return;
+
+	for (index = 0; index < (NUMLOGIP - 1); index++)
+	{
+		if (strcmp(joinedIPlist[index][0], address) == 0)
+			break;
+	}
+
+	CONS_Printf("Adding %s (%s) to list of joined servers - %s\n", servname, address, date);
+
+	// Start by moving every IP up 1 slot (dropping the last IP in the table)
+	for (; index; index--)
+	{
+		strlcpy(joinedIPlist[index][0], joinedIPlist[index - 1][0], MAX_LOGIP);
+		strlcpy(joinedIPlist[index][1], joinedIPlist[index - 1][1], MAX_LOGIP);
+		strlcpy(joinedIPlist[index][2], joinedIPlist[index - 1][2], MAX_LOGIP);
+	}
+
+	// and add the new IP at the start of the table!
+	strlcpy(joinedIPlist[0][0], address, MAX_LOGIP);
+	strlcpy(joinedIPlist[0][1], date, MAX_LOGIP);
+	strlcpy(joinedIPlist[0][2], servname, MAX_LOGIP);
+	M_SaveJoinedIPs();
+}
+
+boolean M_RemoveJoinedIP(UINT8 index)
+{
+	// Nothing in this slot
+	if (!(joinedIPlist[index][0][0] && joinedIPlist[index][1][0]))
+	{
+		return false;
+	}
+
+	joinedIPlist[index][0][0] = joinedIPlist[index][1][0] = '\0';
+	M_SaveJoinedIPs();
+	return true;
+}
+
 /** Returns the map number for a map identified by the last two characters in
   * its name.
   *
@@ -442,6 +495,73 @@ boolean FIL_CheckExtension(const char *in)
 	return false;
 }
 
+void M_SaveJoinedIPs(void)
+{
+	FILE *file = NULL;
+	UINT8 index;
+	const char *filepath = va("%s" PATHSEP "%s", srb2home, IPLOGFILE);
+	if (!*joinedIPlist[0][0])
+		return;
+
+	file = fopen(filepath, "w");
+	if (!file)
+	{
+		CONS_Alert(CONS_WARNING, "Could not save recent IP list into %s\n", IPLOGFILE);
+		return;
+	}
+
+	for (index = 0; index < NUMLOGIP; index++)
+	{
+		if (*joinedIPlist[index][0])
+		{
+			fprintf(file, "%s%s%s%s%s\n", joinedIPlist[index][0], IPLOGFILESEP, joinedIPlist[index][1], IPLOGFILESEP, joinedIPlist[index][2]);
+		}
+	}
+	fclose(file);
+}
+
+void M_LoadJoinedIPs(void)
+{
+	FILE *file = NULL;
+	UINT8 index = 0;
+	char *filepath;
+	char *string;
+	char buffer[2 * (MAX_LOGIP + 1)];
+	filepath = va("%s" PATHSEP "%s", srb2home, IPLOGFILE);
+	file = fopen(filepath, "r");
+	if (file == NULL)
+		return;
+
+	for (index = 0; fgets(buffer, (int)sizeof(buffer), file); index++)
+	{
+		if (index >= NUMLOGIP)
+			break;
+
+		if (!*buffer || (*buffer == '\n'))
+			break;
+
+		for (size_t sub = 0; sub < sizeof(buffer); sub++)
+		{
+			if (buffer[sub] == '\n')
+			{
+				buffer[sub] = '\0';
+				break;
+			}
+		}
+
+		string = strtok(buffer, IPLOGFILESEP);
+		strlcpy(joinedIPlist[index][0], string, MAX_LOGIP);
+		string = strtok(NULL, IPLOGFILESEP);
+		if (string)
+			strlcpy(joinedIPlist[index][1], string, MAX_LOGIP);
+
+		string = strtok(NULL, IPLOGFILESEP);
+		if (string)
+			strlcpy(joinedIPlist[index][2], string, MAX_LOGIP);
+	}
+	fclose(file);
+}
+
 // ==========================================================================
 //                        CONFIGURATION FILE
 // ==========================================================================
@@ -451,15 +571,18 @@ boolean FIL_CheckExtension(const char *in)
 //
 
 char configfile[MAX_WADPATH];
+char bnpconfigfile[MAX_WADPATH];
 
 // ==========================================================================
 //                          CONFIGURATION
 // ==========================================================================
 static boolean gameconfig_loaded = false; // true once config.cfg loaded AND executed
+// archiNiko: now also waits until CV_CLIENT stuff is set (bnpconfig.cfg)
 
 /** Saves a player's config, possibly to a particular file.
   *
   * \sa Command_LoadConfig_f
+  * \todo bnpconfig support probably (will do eventually)
   */
 void Command_SaveConfig_f(void)
 {
@@ -474,7 +597,7 @@ void Command_SaveConfig_f(void)
 	strcpy(tmpstr, COM_Argv(1));
 	FIL_ForceExtension(tmpstr, ".cfg");
 
-	M_SaveConfig(tmpstr);
+	M_SaveConfig(tmpstr, false);
 	if (stricmp(COM_Argv(2), "-silent"))
 		CONS_Printf(M_GetText("config saved as %s\n"), configfile);
 }
@@ -482,6 +605,7 @@ void Command_SaveConfig_f(void)
 /** Loads a game config, possibly from a particular file.
   *
   * \sa Command_SaveConfig_f, Command_ChangeConfig_f
+  * \todo bnpconfig support probably (will do eventually)
   */
 void Command_LoadConfig_f(void)
 {
@@ -540,9 +664,16 @@ void M_FirstLoadConfig(void)
 	if (M_CheckParm("-config") && M_IsNextParm())
 	{
 		strcpy(configfile, M_GetNextParm());
-		CONS_Printf(M_GetText("config file: %s\n"), configfile);
+		CONS_Printf(M_GetText("SRB2 Config file: %s\n"), configfile);
 	}
 
+	// ditto for Banpyura
+	if (M_CheckParm("-bnpconfig") && M_IsNextParm())
+	{
+		strcpy(bnpconfigfile, M_GetNextParm());
+		CONS_Printf(M_GetText("SRB2-Banpyura Config file: %s\n"), bnpconfigfile); // archiNiko: maybe rephrase this?
+	}
+	
 	// load default control
 	G_DefineDefaultControls();
 	G_CopyControls(gamecontrol, gamecontroldefault[gcs_fps], NULL, 0);
@@ -565,6 +696,9 @@ void M_FirstLoadConfig(void)
 	COM_BufInsertText(va("%s \"%d\"\n", cv_execversion.name, EXECVERSION));
 	CV_ToggleExecVersion(false);
 
+	// load config again except for SRB2-Banpyura client cvars
+	COM_BufInsertText(va("exec \"%s\"\n", bnpconfigfile));
+	
 	// make sure I_Quit() will write back the correct config
 	// (do not write back the config if it crash before)
 	gameconfig_loaded = true;
@@ -580,11 +714,13 @@ void M_FirstLoadConfig(void)
 }
 
 /** Saves the game configuration.
-  *
+  * [SRB2-Banpyura] OR Banpyura config
+  * 
   * \sa Command_SaveConfig_f
   */
-void M_SaveConfig(const char *filename)
+void M_SaveConfig(const char *filename, boolean forbanpyura)
 {
+#define THISCONFIG (forbanpyura ? bnpconfigfile : configfile)
 	FILE *f;
 	char *filepath;
 
@@ -611,7 +747,7 @@ void M_SaveConfig(const char *filename)
 		f = fopen(filepath, "w");
 		// change it only if valid
 		if (f)
-			strcpy(configfile, filepath);
+			strcpy(THISCONFIG, filepath);
 		else
 		{
 			CONS_Alert(CONS_ERROR, M_GetText("Couldn't save game config file %s\n"), filepath);
@@ -620,45 +756,48 @@ void M_SaveConfig(const char *filename)
 	}
 	else
 	{
-		if (!strstr(configfile, ".cfg"))
+		if (!strstr(THISCONFIG, ".cfg"))
 		{
 			CONS_Alert(CONS_NOTICE, M_GetText("Config filename must be .cfg\n"));
 			return;
 		}
 
-		f = fopen(configfile, "w");
+		f = fopen(THISCONFIG, "w");
 		if (!f)
 		{
-			CONS_Alert(CONS_ERROR, M_GetText("Couldn't save game config file %s\n"), configfile);
+			CONS_Alert(CONS_ERROR, M_GetText("Couldn't save game config file %s\n"), THISCONFIG);
 			return;
 		}
 	}
 
 	// header message
-	fprintf(f, "// SRB2 configuration file.\n");
+	fprintf(f, "// SRB2%sconfiguration file.\n", (forbanpyura ? "-Banpyura " : " "));
 
-	// print execversion FIRST, because subsequent consvars need to be filtered
-	// always print current EXECVERSION
-	fprintf(f, "%s \"%d\"\n", cv_execversion.name, EXECVERSION);
+	if (!forbanpyura)
+	{
+		// print execversion FIRST, because subsequent consvars need to be filtered
+		// always print current EXECVERSION
+		fprintf(f, "%s \"%d\"\n", cv_execversion.name, EXECVERSION);
+	}
 
 	// FIXME: save key aliases if ever implemented..
 
-	if (tutorialmode && tutorialgcs)
+	if ((tutorialmode && tutorialgcs) && !forbanpyura)
 	{
 		CV_SetValue(&cv_usemouse, tutorialusemouse);
 		CV_SetValue(&cv_alwaysfreelook, tutorialfreelook);
 		CV_SetValue(&cv_mousemove, tutorialmousemove);
 		CV_SetValue(&cv_analog[0], tutorialanalog);
-		CV_SaveVariables(f);
+		CV_SaveVariables(f, false);
 		CV_Set(&cv_usemouse, cv_usemouse.defaultvalue);
 		CV_Set(&cv_alwaysfreelook, cv_alwaysfreelook.defaultvalue);
 		CV_Set(&cv_mousemove, cv_mousemove.defaultvalue);
 		CV_Set(&cv_analog[0], cv_analog[0].defaultvalue);
 	}
 	else
-		CV_SaveVariables(f);
+		CV_SaveVariables(f, forbanpyura);
 
-	if (!dedicated)
+	if (!dedicated && !forbanpyura)
 	{
 		if (tutorialmode && tutorialgcs)
 			G_SaveKeySetting(f, gamecontroldefault[gcs_custom], gamecontrolbis); // using gcs_custom as temp storage
@@ -667,6 +806,7 @@ void M_SaveConfig(const char *filename)
 	}
 
 	fclose(f);
+#undef THISCONFIG
 }
 
 // ==========================================================================

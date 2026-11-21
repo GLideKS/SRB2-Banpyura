@@ -7861,7 +7861,7 @@ boolean P_LoadLevel(boolean fromnetsave, boolean reloadinggamestate)
 	I_FinishUpdate(); // page flip or blit buffer
 
 	// Reset the palette
-	if (rendermode != render_none)
+	if (!(rendermode == render_none || reloadinggamestate))
 		V_SetPaletteLump("PLAYPAL");
 
 	// Initialize sector node list.

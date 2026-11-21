@@ -1348,6 +1348,9 @@ void D_SRB2Main(void)
 	strcpy(savegamename, SAVEGAMENAME"%u.ssg");
 	strcpy(liveeventbackup, "live"SAVEGAMENAME".bkp"); // intentionally not ending with .ssg
 
+	// Init the joined IP table for quick rejoining of past games.
+	M_InitJoinedIPArray();
+
 	{
 		const char *userhome = D_Home(); //Alam: path to home
 
@@ -1357,46 +1360,56 @@ void D_SRB2Main(void)
 			I_Error("Please set $HOME to your home directory\n");
 #else
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "d"CONFIGFILENAME);
+			{
+				snprintf(configfile,		sizeof configfile,		"d"CONFIGFILENAME);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"d"BANPCONFIGFILENAME);
+			}
 			else
-				snprintf(configfile, sizeof configfile, CONFIGFILENAME);
+			{
+				snprintf(configfile,		sizeof configfile, 		CONFIGFILENAME);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	BANPCONFIGFILENAME);
+			}
 #endif
 		}
 		else
 		{
 			// use user specific config file
+			if (M_CheckParm("-workdir") && M_IsNextParm())
+				snprintf(srb2home, sizeof srb2home, "%s", M_GetNextParm());
+			else
 #ifdef DEFAULTDIR
-			snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+				snprintf(srb2home, sizeof srb2home, "%s" PATHSEP DEFAULTDIR, userhome);
+#else // DEFAULTDIR
+				snprintf(srb2home, sizeof srb2home, "%s", userhome);
+#endif // DEFAULTDIR
 			snprintf(downloaddir, sizeof downloaddir, "%s" PATHSEP "DOWNLOAD", srb2home);
 			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, srb2home);
+			{
+				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP "d"CONFIGFILENAME,		srb2home);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP "d"BANPCONFIGFILENAME,	srb2home);
+			}
 			else
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, srb2home);
+			{
+				snprintf(configfile,		sizeof configfile,		"%s" PATHSEP CONFIGFILENAME,		srb2home);
+				snprintf(bnpconfigfile,	sizeof bnpconfigfile,	"%s" PATHSEP BANPCONFIGFILENAME,	srb2home);
+			}
 
 			// can't use sprintf since there is %u in savegamename
 			strcatbf(savegamename, srb2home, PATHSEP);
 			strcatbf(liveeventbackup, srb2home, PATHSEP);
 
 			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", srb2home);
-#else // DEFAULTDIR
-			snprintf(srb2home, sizeof srb2home, "%s", userhome);
-			snprintf(downloaddir, sizeof downloaddir, "%s", userhome);
-			if (dedicated)
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP "d"CONFIGFILENAME, userhome);
-			else
-				snprintf(configfile, sizeof configfile, "%s" PATHSEP CONFIGFILENAME, userhome);
-
-			// can't use sprintf since there is %u in savegamename
-			strcatbf(savegamename, userhome, PATHSEP);
-			strcatbf(liveeventbackup, userhome, PATHSEP);
-
-			snprintf(luafiledir, sizeof luafiledir, "%s" PATHSEP "luafiles", userhome);
-#endif // DEFAULTDIR
 		}
 
 		configfile[sizeof configfile - 1] = '\0';
+		bnpconfigfile[sizeof bnpconfigfile - 1] = '\0';
 	}
 
+	// make sure workdir exists
+	I_mkdir(srb2home, 0755);
+
+	M_LoadJoinedIPs();	// load joined ips
+	
 	// Create addons dir
 	snprintf(addonsdir, sizeof addonsdir, "%s%s%s", srb2home, PATHSEP, "addons");
 	I_mkdir(addonsdir, 0755);

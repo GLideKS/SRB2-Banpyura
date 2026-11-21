@@ -1132,6 +1132,39 @@ int V_VMAPToPaletteIndex(INT32 v_map)
 }
 
 //
+// Draws a patch as a background
+// Useful for fill/fit/stretch-like patch drawing (like intermission or cutscenes)
+//
+// scale types:
+//
+// 0 = fit
+// 1 = fill
+// 2 = stretch
+//
+void V_DrawBackgroundPatch(patch_t *patch, INT32 scale_type)
+{	
+	fixed_t hs = FixedDiv(vid.width * FRACUNIT, patch->width * FRACUNIT);
+	fixed_t vs = FixedDiv(vid.height * FRACUNIT, patch->height * FRACUNIT);
+
+	if (!(scale_type >= 2))
+	{
+		// We leaving the previous function on top because it fills the rest of the screen with a single color.
+		// Quite a hack, sorry. This is just for consistency with the previous looking.
+		V_DrawFixedPatch((0)*FRACUNIT, (0)<<FRACBITS, 1, 0, patch, NULL);
+
+		// Draw the patch and scale according to the width/height
+
+		fixed_t scale = (scale_type ? (hs > vs) : (hs < vs)) ? hs : vs;
+		fixed_t draw_x = (vid.width * FRACUNIT - FixedMul(patch->width*FRACUNIT, scale)) / 2;
+		fixed_t draw_y = (vid.height * FRACUNIT - FixedMul(patch->height*FRACUNIT, scale)) / 2;
+
+		V_DrawFixedPatch(draw_x, draw_y, scale, V_NOSCALEPATCH, patch, NULL);
+	}
+	else
+	 	V_DrawStretchyFixedPatch(0, 0, hs, vs, V_NOSCALEPATCH, patch, NULL);
+}
+
+//
 // Fills a box of pixels with a single color, NOTE: scaled to screen size
 //
 void V_DrawFill(INT32 x, INT32 y, INT32 w, INT32 h, INT32 c)

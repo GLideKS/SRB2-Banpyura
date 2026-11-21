@@ -559,10 +559,11 @@ static int setglobals(lua_State *L)
 		return 0;
 	}
 
+	Z_Free(name);
+
 	if (LUA_CheckGlobals(L, csname))
 		return 0;
 
-	Z_Free(name);
 	return luaL_error(L, "Implicit global " LUA_QS " prevented. Create a local variable instead.", csname);
 }
 
@@ -627,7 +628,6 @@ void LUA_ClearExtVars(void)
 // if they were not called on lump load
 // (i.e. they were called in hooks or coroutines etc)
 INT32 lua_lumploading = 0;
-INT32 lua_locallyloading = 0;
 
 // Load a script from a MYFILE
 static inline boolean LUA_LoadFile(MYFILE *f, char *name)

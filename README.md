@@ -2,7 +2,7 @@
 
 <img width="215" height="215" alt="srb2" src="https://github.com/user-attachments/assets/2ef6dbae-e755-4e60-b20b-9d4cda4466ae" />
 
-SRB2 Banpyura is a custom netgame compatible build of Sonic Robo Blast 2 with a plethora of fixes, improvements, and new features fully based on contributions and other changes the community made, but still holding modding accuracy with SRB2 Vanilla.
+SRB2 Banpyura is a custom netgame compatible build of Sonic Robo Blast 2. It has a plethora of fixes, improvements, and new features fully based on contributions and other changes the community made, but still holding modding accuracy with SRB2 Vanilla.
 
 > [!CAUTION]
 > I (GLide KS) do not assume any responsibility for add-ons loaded locally (feature introduced in SRB2 Kart Saturn, ported to SRB2-Banpyura). If you choose to load or use add-ons for malicious or harmful purposes, you're completely on your own responsibility.
@@ -23,6 +23,8 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - Player names on the rankings hud always use a thin font
 - Servers on the Master Server list has a background (SRB2-Edit)
 - Server information display! shows players, new download confirmation, addon listing, current map. (Lugent)
+- - Also plays a music when showing the server information (`SRVMS1`) and loading files (`SRVMS2`). You can override the music loading an addon containing `SRVMS1` and `SRVMS2` as the music.
+- - This feature is toggleable with `serverviewmusic` command.
 - "Quit Game" and "Abort" red colored
 - OpenGL's black console color to be a proper black and gray is an color option (SRB2 v2.2.16 Nightly)
 - `cecho` messages now prints on console.
@@ -33,7 +35,7 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - OpenGL Light Dithering, smooth light ramps even for Palette rendering! (SRB2-Classic)
 - Splat interpolation (SRB2-edit)
 - Added 1360x768 resolution (personal use)
-- `r_secbright` Configurable minimum sector brightress (SRB2-Legacy)
+- `r_secbright` Configurable minimum sector brightness (SRB2-Legacy)
 - Readded 2.1 sprite shadows! Enabled using `shadow Sprite` in OpenGL. (SRB2-Legacy)
 
 ### Gameplay / Netplay
@@ -41,16 +43,24 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - `addfilelocal` allows you to load addons locally. Can be accessed via Addons Menu and pressing Right Alt as well. (SRB2 Kart Saturn)
 - Fixed SRB2's loading time. (SRB2-Classic)
 - Minimum input delay and Gentleman's delay (Ring Racers)
+- Lifted netxcmd limits (SRB2-Classic)
 - `cam_centertoggle` and `cam2_centertoggle` are not exclusive to the Automatic playstyle.
+- Rejoin server menu with timestamps (Ring Racers)
+- Added total progress bar while downloading addons from a server.
+- `clearscores` command now blames the admin that used it rather than blaming the host.
+- `addfile`/`addfolder` requests from administrators are logged.
+- `allowfilerequests`: If off, addfile/addfolder requests from admins will be silently ignored (they are still logged). On by default.
 
 ### Lua
 
 - Added `CameraThinker` hook to alter the camera's behavior.
 - - `player` and `camera` are passed in as arguments. Return `true` to override vanilla camera movement.
+- Added HTTP library from SRB2 AX.
+- - Check the wiki (https://github.com/GLideKS/SRB2-Banpyura/wiki/Lua-stuff) for more details.
 
 ### Miscellaneous
 
-- Improved GIF recording.
+- Improved GIF/movie recording. (Movie HUD, default size limit of 20 MB, fixed aPNG, etc.)
 - The game now goes to the title or drops a warning instead of crashing on the following situations: `Invalid sector number from server`, `Invalid line number from server`, `Savegame corrupted`, `polyobj count inconsistency`, SOCK_Send errors.
 - `saveaddons` saves the current addon order to be loaded as a console script. Useful for quickly testing addon lists locally for servers.
 - Don't reset chasecam and do not run special stage wipe on resync (Jisk, Lugent)
@@ -63,6 +73,7 @@ Icon credits goes to ClovesCloestarSRB2 and his addon [New Springs](https://mb.s
 - - You can choose to hide certain sections via `cvarinfo` ("Show All" by default).
 - See the amount of used freeslots using `freeslots`.
 - Force console input with the `-forceconsole` parameter.
+- Banpyura options are saved in a separated config file. `bnpconfig.cfg`
 
 **Most of these options can be found in the menu under Banpyura Options....**
 
