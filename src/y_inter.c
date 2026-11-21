@@ -405,7 +405,12 @@ void Y_IntermissionDrawer(void)
 		return;
 
 	if (useinterpic)
+	{	
+		// We leaving the previous function on top because it fills the rest of the screen with a single color.
+		// Quite a hack, sorry. This is just for consistency with the previous looking.
 		V_DrawScaledPatch(0, 0, 0, interpic);
+		V_DrawBackgroundPatch(interpic, 0);
+	}
 	else if (!usetile)
 	{
 		if (rendermode == render_soft && usebuffer)
