@@ -1315,7 +1315,7 @@ static boolean CL_FinishedFileList(void)
 			curfadevalue = 0;
 		}
 		else
-			cl_mode = CL_LOADFILES;
+			DoLoadFiles();
 	}
 	else
 	{
