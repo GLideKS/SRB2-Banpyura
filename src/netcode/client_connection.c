@@ -211,7 +211,12 @@ static void CL_DrawServerInfo(void)
 		xoffset = 80;
 	}
 
-	V_DrawString(12 + xoffset, ypos+2, V_ALLOWLOWERCASE, va("%s", serverlist[joinnode].info.servername));
+	const char *servername = va("%s", serverlist[joinnode].info.servername);
+
+	if (strlen(servername) <= 23)
+		V_DrawString(12 + xoffset, ypos+2, V_ALLOWLOWERCASE, servername);
+	else
+		V_DrawThinString(12 + xoffset, ypos+2, V_ALLOWLOWERCASE, servername);
 
 	UINT32 ping = (UINT32)serverlist[joinnode].info.time;
 	const char *pingcolor = "\x85";
