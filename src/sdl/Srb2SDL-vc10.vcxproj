@@ -421,6 +421,7 @@
     <ClInclude Include="hwsym_sdl.h" />
     <ClInclude Include="i_ttf.h" />
     <ClInclude Include="ogl_sdl.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="sdlmain.h" />
   </ItemGroup>
   <ItemGroup>
@@ -640,6 +641,9 @@
     <ClCompile Include="ogl_sdl.c" />
     <ClCompile Include="SDL_main\SDL_windows_main.c" />
     <ClCompile Include="sdl_sound.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\win32\Srb2win.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Srb2SDL.ico" />
