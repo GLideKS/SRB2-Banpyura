@@ -2803,7 +2803,8 @@ static void ST_overlayDrawer(void)
 		{
 			char name[MAXPLAYERNAME+1];
 			// shorten the name if its more than twenty four characters.
-			strlcpy(name, player_names[stplyr-players], 25);
+			// niko: just take the whole thing the limit is 21 lol
+			strlcpy(name, player_names[stplyr-players], MAXPLAYERNAME);
 
 			// Show name of player being displayed
 			V_DrawCenteredString((BASEVIDWIDTH/6), BASEVIDHEIGHT-80, 0, M_GetText("Viewpoint:"));

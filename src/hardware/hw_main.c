@@ -2891,8 +2891,10 @@ static void HWR_DrawDropShadow(mobj_t *thing, gl_vissprite_t *spr, fixed_t scale
 		shadowVerts[0].z = shadowVerts[3].z = spr->z1;
 		shadowVerts[2].z = shadowVerts[1].z = spr->z2;
 
-		if (thing && fabsf(fscale - 1.0f) > 1.0E-36f)
+		if (thing)
 		{
+			float object_scale = FIXED_TO_FLOAT(interp.scale);
+
 			// Always a pixel above the floor, perfectly flat.
 			for (i = 0; i < 4; i++)
 			{
@@ -2903,26 +2905,10 @@ static void HWR_DrawDropShadow(mobj_t *thing, gl_vissprite_t *spr, fixed_t scale
 
 			// Now transform the TOP vertices along the floor in the direction of the camera
 
-			shadowVerts[3].x = spr->x1 + (gpatch->height + fscale + offset) * gl_viewcos;
-			shadowVerts[2].x = spr->x2 + (gpatch->height + fscale + offset) * gl_viewcos;
-			shadowVerts[3].z = spr->z1 + (gpatch->height + fscale + offset) * gl_viewsin;
-			shadowVerts[2].z = spr->z2 + (gpatch->height + fscale + offset) * gl_viewsin;
-		}
-		else
-		{
-			// Always a pixel above the floor, perfectly flat.
-			for (i = 0; i < 4; i++)
-			{
-				if (groundslope)
-					slopez = P_GetSlopeZAt(groundslope, FLOAT_TO_FIXED(shadowVerts[i].x), FLOAT_TO_FIXED(shadowVerts[i].z));
-				shadowVerts[i].y = (groundslope ? FIXED_TO_FLOAT(slopez) : FIXED_TO_FLOAT(groundz))/2 + flip * 0.05f;
-			}
-
-			// Now transform the TOP vertices along the floor in the direction of the camera
-			shadowVerts[3].x = spr->x1 + (gpatch->height + offset) * gl_shadowcos;
-			shadowVerts[2].x = spr->x2 + (gpatch->height + offset) * gl_shadowcos;
-			shadowVerts[3].z = spr->z1 + (gpatch->height + offset) * gl_shadowsin;
-			shadowVerts[2].z = spr->z2 + (gpatch->height + offset) * gl_shadowsin;
+			shadowVerts[3].x = spr->x1 + (gpatch->height * object_scale) * gl_viewcos;
+			shadowVerts[2].x = spr->x2 + (gpatch->height * object_scale) * gl_viewcos;
+			shadowVerts[3].z = spr->z1 + (gpatch->height * object_scale) * gl_viewsin;
+			shadowVerts[2].z = spr->z2 + (gpatch->height * object_scale) * gl_viewsin;
 		}
 	}
 
@@ -2932,6 +2918,13 @@ static void HWR_DrawDropShadow(mobj_t *thing, gl_vissprite_t *spr, fixed_t scale
 		float oldy = shadowVerts[i].z;
 		shadowVerts[i].x = fx + ((oldx - fx) * gl_shadowcos) - ((oldy - fy) * gl_shadowsin);
 		shadowVerts[i].z = fy + ((oldx - fx) * gl_shadowsin) + ((oldy - fy) * gl_shadowcos);
+
+		// sprite offset experiment
+		/*if (cv_shadow.value == 2)
+		{
+			shadowVerts[i].x -= (gpatch->topoffset - gpatch->height) * gl_shadowsin;
+			shadowVerts[i].z -= (gpatch->topoffset - gpatch->height) * gl_shadowcos;
+		}*/
 	}
 
 	if (groundslope)
@@ -2954,7 +2947,7 @@ static void HWR_DrawDropShadow(mobj_t *thing, gl_vissprite_t *spr, fixed_t scale
 	shadowVerts[3].t = shadowVerts[2].t = 0;
 	shadowVerts[0].t = shadowVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
 
-
+	// sprite flipping
 	if (cv_shadow.value == 2)
 	{
 		if (spr->flip)

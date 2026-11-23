@@ -14640,7 +14640,7 @@ void M_QuitResponse(INT32 ch)
 		ptime = I_GetTime() + NEWTICRATE*2; // Shortened the quit time, used to be 2 seconds Tails 03-26-2001
 		while (ptime > I_GetTime())
 		{
-			V_DrawScaledPatch(0, 0, 0, W_CachePatchName("GAMEQUIT", PU_PATCH)); // Demo 3 Quit Screen Tails 06-16-2001
+			V_DrawBackgroundPatch(W_CachePatchName("GAMEQUIT", PU_PATCH), 0); // Demo 3 Quit Screen Tails 06-16-2001
 			V_DrawCenteredString(2+(V_StringWidth(QuitScreenMessages[0], V_ALLOWLOWERCASE)/2), 4, V_ALLOWLOWERCASE, QuitScreenMessages[0]);
 			V_DrawCenteredString(160, 166, V_ALLOWLOWERCASE|V_REDMAP, QuitScreenMessages[1]);
 			V_DrawCenteredString(160, 176, V_ALLOWLOWERCASE, QuitScreenMessages[2]);
