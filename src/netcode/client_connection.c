@@ -228,7 +228,7 @@ static void CL_DrawServerInfo(void)
 	V_DrawRightAlignedThinString(BASEVIDWIDTH - 12, ypos+3, V_ALLOWLOWERCASE, va("%s%u\x80ms", pingcolor, ping));
 
 	char mapname[41] = "\0";
-	strcat(mapname, serverlist[joinnode].info.maptitle);
+	strncat(mapname, serverlist[joinnode].info.maptitle, 32);
 	if (serverlist[joinnode].info.iszone)
 		strcat(mapname, " ZONE");
 	
