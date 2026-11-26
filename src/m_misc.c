@@ -500,9 +500,6 @@ void M_SaveJoinedIPs(void)
 	FILE *file = NULL;
 	UINT8 index;
 	const char *filepath = va("%s" PATHSEP "%s", srb2home, IPLOGFILE);
-	if (!*joinedIPlist[0][0])
-		return;
-
 	file = fopen(filepath, "w");
 	if (!file)
 	{
