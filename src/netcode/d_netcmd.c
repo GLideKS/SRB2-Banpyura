@@ -1753,6 +1753,16 @@ static void Command_SaveAddons_f(void)
     // save as a cfg to be recognized properly in the addons menu
 	strcpy(filename, va("%s%s-%s.cfg", pathname, cv_servername.string, timename));
 
+	// clean up the filename, taken from chat message code in hu_stuff.c
+	char *ptr = filename + strlen(pathname);
+	while (*ptr != '\0')
+	{
+		if (*ptr == '/' || *ptr == '\\' || *ptr == '?')
+			*ptr = ' ';
+
+		ptr++;
+	}
+
 	// open the file (e.g. heystinky-06-20-2026 18-29-49.cfg)
 	file = fopen(filename, "w");
 
