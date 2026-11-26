@@ -3010,6 +3010,8 @@ static void HWR_DrawDropShadow(mobj_t *thing, gl_vissprite_t *spr, fixed_t scale
 // This is expecting a pointer to an array containing 4 wallVerts for a sprite
 static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts, const boolean precip)
 {
+	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && R_ThingIsAffineSprite(spr->mobj));
+
 	if (cv_glspritebillboarding.value
 		&& spr && spr->mobj && !R_ThingIsPaperSprite(spr->mobj)
 		&& wallVerts)
@@ -3056,20 +3058,42 @@ static void HWR_RotateSpritePolyToAim(gl_vissprite_t *spr, FOutVector *wallVerts
 		// X, Y, AND Z need to be manipulated for the polys to rotate around the
 		// origin, because of how the origin setting works I believe that should
 		// be mobj->z or mobj->z + mobj->height
-		wallVerts[2].y = wallVerts[3].y = (spr->gzt - basey) * gl_viewludsin + basey;
-		wallVerts[0].y = wallVerts[1].y = (lowy - basey) * gl_viewludsin + basey;
-		// translate back to be around 0 before translating back
-		wallVerts[3].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
-		wallVerts[2].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
 
-		wallVerts[0].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
-		wallVerts[1].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
+		if (affine)
+		{
+			wallVerts[0].y = (spr->affine.p1.y * gl_viewludsin) + spr->affine.root.y;
+			wallVerts[0].x += (spr->affine.p1.y * gl_viewludcos) * gl_viewcos;
+			wallVerts[0].z += (spr->affine.p1.y * gl_viewludcos) * gl_viewsin;
 
-		wallVerts[3].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
-		wallVerts[2].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+			wallVerts[1].y = (spr->affine.p2.y * gl_viewludsin) + spr->affine.root.y;
+			wallVerts[1].x += (spr->affine.p2.y * gl_viewludcos) * gl_viewcos;
+			wallVerts[1].z += (spr->affine.p2.y * gl_viewludcos) * gl_viewsin;
 
-		wallVerts[0].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
-		wallVerts[1].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+			wallVerts[2].y = (spr->affine.p3.y * gl_viewludsin) + spr->affine.root.y;
+			wallVerts[2].x += (spr->affine.p3.y * gl_viewludcos) * gl_viewcos;
+			wallVerts[2].z += (spr->affine.p3.y * gl_viewludcos) * gl_viewsin;
+
+			wallVerts[3].y = (spr->affine.p4.y * gl_viewludsin) + spr->affine.root.y;
+			wallVerts[3].x += (spr->affine.p4.y * gl_viewludcos) * gl_viewcos;
+			wallVerts[3].z += (spr->affine.p4.y * gl_viewludcos) * gl_viewsin;
+		}
+		else
+		{
+			wallVerts[2].y = wallVerts[3].y = (spr->gzt - basey) * gl_viewludsin + basey;
+			wallVerts[0].y = wallVerts[1].y = (lowy - basey) * gl_viewludsin + basey;
+			// translate back to be around 0 before translating back
+			wallVerts[3].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
+			wallVerts[2].x += ((spr->gzt - basey) * gl_viewludcos) * gl_viewcos;
+
+			wallVerts[0].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
+			wallVerts[1].x += ((lowy - basey) * gl_viewludcos) * gl_viewcos;
+
+			wallVerts[3].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+			wallVerts[2].z += ((spr->gzt - basey) * gl_viewludcos) * gl_viewsin;
+
+			wallVerts[0].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+			wallVerts[1].z += ((lowy - basey) * gl_viewludcos) * gl_viewsin;
+		}
 	}
 }
 
@@ -3144,18 +3168,25 @@ static void HWR_SplitSprite(gl_vissprite_t *spr)
 		baseWallVerts[0].t = baseWallVerts[1].t = ((GLPatch_t *)gpatch->hardware)->max_t;
 	}
 
-	// if it has a dispoffset, push it a little towards the camera
-	if (spr->dispoffset) {
-		float co = -gl_viewcos*(0.05f*spr->dispoffset);
-		float si = -gl_viewsin*(0.05f*spr->dispoffset);
-		baseWallVerts[0].z = baseWallVerts[3].z = baseWallVerts[0].z+si;
-		baseWallVerts[1].z = baseWallVerts[2].z = baseWallVerts[1].z+si;
-		baseWallVerts[0].x = baseWallVerts[3].x = baseWallVerts[0].x+co;
-		baseWallVerts[1].x = baseWallVerts[2].x = baseWallVerts[1].x+co;
-	}
-
 	// Let dispoffset work first since this adjust each vertex
 	HWR_RotateSpritePolyToAim(spr, baseWallVerts, false);
+
+	// push it toward the camera to mitigate floor-clipping sprites
+	float sprdist = 0;
+
+	float f_xdiff = (spr->x1 - gl_viewx);
+	float f_ydiff = (spr->z1 - gl_viewy);
+	float f_zdiff = (spr->gzt - gl_viewz);
+
+	sprdist = sqrtf((f_xdiff * f_xdiff) + (f_ydiff * f_ydiff) + (f_zdiff * f_zdiff));
+
+	float distfact = ((2.0f * spr->dispoffset)/* + 20.0f*/) / sprdist;
+	for (i = 0; i < 4; i++)
+	{
+		baseWallVerts[i].x += (gl_viewx - baseWallVerts[i].x) * distfact;
+		baseWallVerts[i].z += (gl_viewy - baseWallVerts[i].z) * distfact;
+		baseWallVerts[i].y += (gl_viewz - baseWallVerts[i].y) * distfact;
+	}
 
 	realtop = top = baseWallVerts[3].y;
 	realbot = bot = baseWallVerts[0].y;
@@ -3435,6 +3466,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	FOutVector wallVerts[4];
 	patch_t *gpatch;
 	FSurfaceInfo Surf;
+	const boolean affine = ((spr->mobj && !P_MobjWasRemoved(spr->mobj)) && R_ThingIsAffineSprite(spr->mobj));
 	const boolean splat = R_ThingIsFloorSprite(spr->mobj);
 
 	if (!spr->mobj)
@@ -3443,7 +3475,7 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 	if (!spr->mobj->subsector)
 		return;
 
-	if (spr->mobj->subsector->sector->numlights && !splat)
+	if (spr->mobj->subsector->sector->numlights && !splat && !affine)
 	{
 		HWR_SplitSprite(spr);
 		return;
@@ -3574,6 +3606,29 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 				wallVerts[i].y = FIXED_TO_FLOAT(spr->gz) + zoffset;
 		}
 	}
+	else if (affine)
+	{
+		// Affines are weird; we've generated the transformations for them,
+		// so now we need to piece together each wall vertex.
+		const float _cos = spr->affine.patchcos;
+		const float _sin = spr->affine.patchsin;
+
+		wallVerts[0].x = spr->affine.root.x + (spr->affine.p1.x * _cos);
+		wallVerts[0].z = spr->affine.root.z + (spr->affine.p1.x * _sin);
+		wallVerts[0].y = spr->affine.root.y + spr->affine.p1.y;
+
+		wallVerts[1].x = spr->affine.root.x + (spr->affine.p2.x * _cos);
+		wallVerts[1].z = spr->affine.root.z + (spr->affine.p2.x * _sin);
+		wallVerts[1].y = spr->affine.root.y + spr->affine.p2.y;
+
+		wallVerts[2].x = spr->affine.root.x + (spr->affine.p3.x * _cos);
+		wallVerts[2].z = spr->affine.root.z + (spr->affine.p3.x * _sin);
+		wallVerts[2].y = spr->affine.root.y + spr->affine.p3.y;
+
+		wallVerts[3].x = spr->affine.root.x + (spr->affine.p4.x * _cos);
+		wallVerts[3].z = spr->affine.root.z + (spr->affine.p4.x * _sin);
+		wallVerts[3].y = spr->affine.root.y + spr->affine.p4.y;
+	}
 	else
 	{
 		// these were already scaled in HWR_ProjectSprite
@@ -3614,18 +3669,38 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 
 	if (!splat)
 	{
-		// if it has a dispoffset, push it a little towards the camera
-		if (spr->dispoffset) {
-			float co = -gl_viewcos*(0.05f*spr->dispoffset);
-			float si = -gl_viewsin*(0.05f*spr->dispoffset);
-			wallVerts[0].z = wallVerts[3].z = wallVerts[0].z+si;
-			wallVerts[1].z = wallVerts[2].z = wallVerts[1].z+si;
-			wallVerts[0].x = wallVerts[3].x = wallVerts[0].x+co;
-			wallVerts[1].x = wallVerts[2].x = wallVerts[1].x+co;
-		}
-
 		// Let dispoffset work first since this adjust each vertex
 		HWR_RotateSpritePolyToAim(spr, wallVerts, false);
+
+		// push it toward the camera to mitigate floor-clipping sprites
+		polyvertex_t pushpoint = { 0 };
+
+		if (affine)
+		{
+			pushpoint.x = spr->affine.bounding_point.x;
+			pushpoint.y = spr->affine.bounding_point.y;
+			pushpoint.z = spr->affine.bounding_point.z;
+		}
+		else
+		{
+			pushpoint.x = spr->x1;
+			pushpoint.y = spr->z1;
+			pushpoint.z = spr->gzt;
+		}
+
+		float f_xdiff = (pushpoint.x - gl_viewx);
+		float f_ydiff = (pushpoint.y - gl_viewy);
+		float f_zdiff = (pushpoint.z - gl_viewz);
+
+		float sprdist = sqrtf((f_xdiff * f_xdiff) + (f_ydiff * f_ydiff) + (f_zdiff * f_zdiff));
+
+		float distfact = ((2.0f * spr->dispoffset)/* + 20.0f*/) / sprdist;
+		for (size_t i = 0; i < 4; i++)
+		{
+			wallVerts[i].x += (gl_viewx - wallVerts[i].x) * distfact;
+			wallVerts[i].z += (gl_viewy - wallVerts[i].z) * distfact;
+			wallVerts[i].y += (gl_viewz - wallVerts[i].y) * distfact;
+		}
 	}
 
 	// This needs to be AFTER the shadows so that the regular sprites aren't drawn completely black.
@@ -3649,9 +3724,21 @@ static void HWR_DrawSprite(gl_vissprite_t *spr)
 		if (!(spr->mobj->renderflags & RF_NOCOLORMAPS))
 			colormap = sector->extra_colormap;
 
-		if (splat && sector->numlights)
+		if ((splat||affine) && sector->numlights)
 		{
-			INT32 light = R_GetPlaneLight(sector, spr->mobj->z, false);
+			// Affine splitting is going to require more advanced tricks
+			// (GLSL fragment shader, or generating a "split" polygon on the fly).
+			// I've already spent too much time on this damn thing, so I'm just doing
+			// what precipitation (and, by extension, MD2) does.
+
+			fixed_t _zoffs = 0;
+
+			if (affine)
+			{
+				_zoffs = spr->mobj->height; // Always use the light at the top instead of whatever I was doing before
+			}
+
+			INT32 light = R_GetPlaneLight(sector, spr->mobj->z + _zoffs, false);
 
 			if (!lightset)
 				lightlevel = *sector->lightlist[light].lightlevel > 255 ? 255 : *sector->lightlist[light].lightlevel;
@@ -4424,6 +4511,16 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	angle_t spriterotangle = 0;
 #endif
 
+	// Affines
+	boolean affinesprite = R_ThingIsAffineSprite(thing);
+	affine_t affine_transform = {0};
+	vector2_t affine_scale = {0};
+	f_vector2_t affine_pivotoffsetdiff = {0};
+
+	polyvertex_t affine_rootpoint = {0};
+	f_vector2_t affine_point[4] = {0};
+	float leftbound = 0, backbound = 0, topbound = 0;
+
 	// uncapped/interpolation
 	interpmobjstate_t interp = {0};
 
@@ -4599,19 +4696,26 @@ static void HWR_ProjectSprite(mobj_t *thing)
 			flip ^= (1<<rot);
 	}
 
-	if (thing->skin && ((skin_t *)thing->skin)->flags & SF_HIRES)
-		this_scale *= FIXED_TO_FLOAT(((skin_t *)thing->skin)->highresscale);
+	fixed_t highresscale = FRACUNIT;
+	if (thing->skin && ((skin_t*)thing->skin)->flags & SF_HIRES)
+	{
+		highresscale = ((skin_t*)thing->skin)->highresscale;
+		this_scale *= FIXED_TO_FLOAT(highresscale);
+	}
 
 	spr_width = spritecachedinfo[lumpoff].width;
 	spr_height = spritecachedinfo[lumpoff].height;
 	spr_offset = spritecachedinfo[lumpoff].offset;
 	spr_topoffset = spritecachedinfo[lumpoff].topoffset;
 
+	float base_topoffs = FIXED_TO_FLOAT(spr_topoffset);
+
 #ifdef ROTSPRITE
 	spriterotangle = R_SpriteRotationAngle(&interp);
 
 	if (spriterotangle != 0
-	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE)))
+	&& !(splat && !(thing->renderflags & RF_NOSPLATROLLANGLE))
+	&& (!affinesprite)) // Affines are capable of rotation; this is redundant
 	{
 		if (papersprite)
 		{
@@ -4638,6 +4742,84 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		}
 	}
 #endif
+
+	if (affinesprite)
+	{
+		vector2_t affine_pivot = {0};
+
+		vector2_t patch_defaultpivot = {.x = spr_offset, .y = (spr_height / 2)};
+		
+		R_GetPivotVectorFromSpriteInfo(&affine_pivot,
+									   &patch_defaultpivot,
+									   sprinfo,
+									   (thing->frame & FF_FRAMEMASK));
+
+		fixed_t use_xoffset = spr_offset;
+
+		if (flip)
+		{
+			use_xoffset = spr_width - spr_offset;
+		}
+
+		if (thing->renderflags & RF_ABSOLUTEOFFSETS)
+		{
+			use_xoffset = FixedDiv(interp.spritexoffset, highresscale);
+		}
+		else
+		{
+			use_xoffset += (FixedDiv(interp.spritexoffset, highresscale) * (flip ? -1 : 1));
+		}
+
+		affine_pivotoffsetdiff.x = FIXED_TO_FLOAT(affine_pivot.x - use_xoffset);
+		affine_pivotoffsetdiff.y = FIXED_TO_FLOAT(affine_pivot.y - spr_topoffset);
+
+		affine_scale.x = FLOAT_TO_FIXED(spritexscale * this_scale);
+		affine_scale.y = FLOAT_TO_FIXED(spriteyscale * this_scale);
+
+		angle_t angle;
+
+		INT32 flipsign = ((papersprite) ? -1 : 1); // Flip OGL affine papersprites for Software parity
+
+		angle = R_ConvToRollAngle(spriterotangle) * flipsign;
+
+		/*const fixed_t rolloffs_x = FixedDiv(interptarg->rollingxoffset * FRACUNIT, highresscale) * (((thing->renderflags & RF_FLIPOFFSETS) && flip) ? -1 : 1);
+		const fixed_t rolloffs_y = FixedDiv(interptarg->rollingyoffset * FRACUNIT, highresscale);*/
+		const fixed_t rolloffs_x = 0;
+		const fixed_t rolloffs_y = 0;
+		fixed_t y_piv = affine_pivot.y;
+
+		if (vflip)
+		{
+			// Flip the upper offset, and use *that* as the pivot
+			y_piv = spr_height - y_piv;
+			angle = -angle;
+		}
+
+		//fixed_t sa = FSIN(angle), ca = FCOS(angle);
+		fixed_t sa = FINESINE(angle >> ANGLETOFINESHIFT), ca = FINECOSINE(angle >> ANGLETOFINESHIFT);
+
+		if (R_AffinePreScale(thing))
+		{
+			affine_transform.a = FixedDiv(ca, affine_scale.x);
+			affine_transform.b = FixedDiv(-sa, affine_scale.x);
+			affine_transform.c = FixedDiv(sa, affine_scale.y);
+			affine_transform.d = FixedDiv(ca, affine_scale.y);
+		}
+		else
+		{
+			// Simulate shitty SRB2 "scale after rotate" nonsense
+			affine_transform.a = FixedDiv(ca, affine_scale.x);
+			affine_transform.b = FixedDiv(-sa, affine_scale.y);
+			affine_transform.c = FixedDiv(sa, affine_scale.x);
+			affine_transform.d = FixedDiv(ca, affine_scale.y);
+		}
+
+		affine_transform.ox = affine_pivot.x - rolloffs_x;
+		affine_transform.oy = y_piv - rolloffs_y;
+
+		spritexscale = 1.0;
+		spriteyscale = 1.0;
+	}
 
 	if (thing->renderflags & RF_ABSOLUTEOFFSETS)
 	{
@@ -4710,15 +4892,173 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	}
 	else
 	{
-		if (flip)
+#ifdef ROTSPRITE
+		if (visoffs.x)
 		{
-			x1 = (FIXED_TO_FLOAT(spr_width - spr_offset) * this_xscale);
-			x2 = (FIXED_TO_FLOAT(spr_offset) * this_xscale);
+			//visoffs.x = (FixedDiv((visoffs.x * FRACUNIT), mapobjectscale));
+			visoffs.x = (visoffs.x * FRACUNIT);
+		}
+#endif
+		if (affinesprite)
+		{
+			x1 = x2 = z1 = z2 = 0.0f;
+
+			float f_offs, f_width, f_height;
+
+			f_offs = FIXED_TO_FLOAT(spr_offset);
+			f_width = FIXED_TO_FLOAT(spr_width);
+			f_height = FIXED_TO_FLOAT(spr_height);
+
+			// From HWR_DrawAffinePatch
+
+			float fa = FIXED_TO_FLOAT(affine_transform.a);
+			float fd = FIXED_TO_FLOAT(affine_transform.d);
+			float fc = FIXED_TO_FLOAT(affine_transform.c);
+			float fb = FIXED_TO_FLOAT(affine_transform.b);
+			float fx = FIXED_TO_FLOAT(affine_transform.ox);
+			float fy = FIXED_TO_FLOAT(affine_transform.oy);
+
+			// now, the matrix passed to this function maps screen coordinates to texel coordinates...
+			// but to translate this from software to GL, we have to figure out where each corner
+			// (or vertex) of the patch should end up on the screen.
+			// which means we have to map texel coordinates to screen coordinates.
+			// which means we have to invert the matrix.
+			// how do you invert a matrix?
+			// ...
+			// i don't fucking know, i spent a day on this and got absolutely nowhere, but this guy knows:
+			// https://nigeltao.github.io/blog/2021/inverting-3x2-affine-transformation-matrix.html
+			float determinant = fa * fd - fb * fc;
+			if (determinant > 0.0f)
+			{
+				float ba = fd / determinant;
+				float bb = -fb / determinant;
+				float bc = -fc / determinant;
+				float bd = fa / determinant;
+
+				// set the polygon vertices to the right positions
+				//  3--2
+				//  | /|
+				//  |/ |
+				//  0--1
+				affine_point[3].x = (ba * -fx + bb * -fy + fx);
+				affine_point[3].y = (bc * -fx + bd * -fy + fy);
+
+				affine_point[2].x = ba * (f_width - fx) + bb * -fy + fx;
+				affine_point[2].y = bc * (f_width - fx) + bd * -fy + fy;
+
+				affine_point[0].x = ba * -fx + bb * (f_height - fy) + fx;
+				affine_point[0].y = bc * -fx + bd * (f_height - fy) + fy;
+
+				affine_point[1].x = ba * (f_width - fx) + bb * (f_height - fy) + fx;
+				affine_point[1].y = bc * (f_width - fx) + bd * (f_height - fy) + fy;
+
+				// Focus each point on the center.
+				affine_point[0].x = fx - affine_point[0].x;
+				affine_point[1].x = fx - affine_point[1].x;
+				affine_point[2].x = fx - affine_point[2].x;
+				affine_point[3].x = fx - affine_point[3].x;
+
+				affine_point[1].y -= fy;
+				affine_point[2].y -= fy;
+				affine_point[0].y -= fy;
+				affine_point[3].y -= fy;
+
+				// ...okay, now comb through all four vertices and set the output bounds based on this.
+				// "Why not a loop?" According to SM64 programming wizard Kaze Emanuar,
+				// loops take more processing time. If we can help it, it's better to just cut corners.
+				// romoney5: yeah but this is not the n64..
+				float f_left = 0;
+				float f_bottom = 0;
+				float f_right = 0;
+				float f_top = 0;
+				float f_xlen = 0;
+				float f_ylen = 0;
+#define BOUNDCHECK(i)                                     \
+	{                                                 \
+		f_left = min(affine_point[i].x, f_left); \
+		f_bottom =  max(affine_point[i].y, f_bottom); \
+		f_top =  min(affine_point[i].y, f_top); \
+		f_right =  max(affine_point[i].x, f_right); \
+		f_xlen = (f_right - f_left); \
+		f_ylen = (f_bottom - f_top); \
+	}
+
+				BOUNDCHECK(0);
+				BOUNDCHECK(1);
+				BOUNDCHECK(2);
+				BOUNDCHECK(3);
+
+#undef BOUNDCHECK
+
+				backbound = (f_left * rightsin);
+				leftbound = (f_left * rightcos);
+				topbound = f_bottom * -1;
+
+				// Invert the Y values.
+				affine_point[0].y *= -1.0f;
+				affine_point[1].y *= -1.0f;
+				affine_point[2].y *= -1.0f;
+				affine_point[3].y *= -1.0f;
+
+				affine_rootpoint.x = tr_x;
+				affine_rootpoint.z = tr_y;
+
+				affine_pivotoffsetdiff.x *= FIXED_TO_FLOAT(affine_scale.x);
+				affine_pivotoffsetdiff.y *= FIXED_TO_FLOAT(affine_scale.y);
+
+				affine_rootpoint.x -= (affine_pivotoffsetdiff.x * rightcos);
+				affine_rootpoint.z -= (affine_pivotoffsetdiff.x * rightsin);
+
+#ifdef ROTSPRITE
+				const float xrescale = this_xscale;// / FIXED_TO_FLOAT(mapobjectscale);
+				//float f_visx = (FIXED_TO_FLOAT(FixedMul(visoffs.x, mapobjectscale))) * xrescale;
+				float f_visx = (FIXED_TO_FLOAT(visoffs.x)) * xrescale;
+				if (flip)
+				{
+					spr_offset -= visoffs.x;
+					affine_rootpoint.x -= (f_visx * rightcos);
+					affine_rootpoint.z -= (f_visx * rightsin);
+				}
+				else
+				{
+					spr_offset += visoffs.x;
+					affine_rootpoint.x += (f_visx * rightcos);
+					affine_rootpoint.z += (f_visx * rightsin);
+				}
+#endif
+			}
+			else
+			{
+				goto nodeterminant;
+			}
+
 		}
 		else
 		{
-			x1 = (FIXED_TO_FLOAT(spr_offset) * this_xscale);
-			x2 = (FIXED_TO_FLOAT(spr_width - spr_offset) * this_xscale);
+nodeterminant:
+			if (flip)
+			{
+#ifdef ROTSPRITE
+				spr_offset -= visoffs.x;
+				spr_offset -= rotoffset.x;
+#endif
+				x1 = (FIXED_TO_FLOAT((spr_width - spr_offset)) * this_xscale);
+				x2 = (FIXED_TO_FLOAT(spr_offset) * this_xscale);
+			}
+			else
+			{
+#ifdef ROTSPRITE
+				spr_offset += visoffs.x;
+				spr_offset += rotoffset.x;
+#endif
+				x1 = (FIXED_TO_FLOAT(spr_offset) * this_xscale);
+				x2 = (FIXED_TO_FLOAT(spr_width - spr_offset) * this_xscale);
+			}
+
+			z1 = tr_y + x1 * rightsin;
+			z2 = tr_y - x2 * rightsin;
+			x1 = tr_x + x1 * rightcos;
+			x2 = tr_x - x2 * rightcos;
 		}
 
 		// test if too close
@@ -4733,20 +5073,42 @@ static void HWR_ProjectSprite(mobj_t *thing)
 		}
 	*/
 
-		z1 = tr_y + x1 * rightsin;
-		z2 = tr_y - x2 * rightsin;
-		x1 = tr_x + x1 * rightcos;
-		x2 = tr_x - x2 * rightcos;
+		affine_rootpoint.y = 0;
+
+		const float f_topoffs = (FIXED_TO_FLOAT(spr_topoffset));
 
 		if (vflip)
 		{
-			gz = FIXED_TO_FLOAT(interp.z + interp.height) - (FIXED_TO_FLOAT(spr_topoffset) * this_yscale);
-			gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
+			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z + interp.height) + affine_pivotoffsetdiff.y) - (f_topoffs * this_yscale);
 		}
 		else
 		{
-			gzt = FIXED_TO_FLOAT(interp.z) + (FIXED_TO_FLOAT(spr_topoffset) * this_yscale);
-			gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
+			affine_rootpoint.y = (FIXED_TO_FLOAT(interp.z) - affine_pivotoffsetdiff.y) + (f_topoffs * this_yscale);
+		}
+
+		if (!affinesprite)
+		{
+			if (vflip)
+			{
+				gz = affine_rootpoint.y;
+				gzt = gz + (FIXED_TO_FLOAT(spr_height) * this_yscale);
+			}
+			else
+			{
+				gzt = affine_rootpoint.y;
+				gz = gzt - (FIXED_TO_FLOAT(spr_height) * this_yscale);
+			}
+		}
+		else
+		{
+			if (vflip)
+			{
+				affine_rootpoint.y += (base_topoffs * this_yscale);
+			}
+			else
+			{
+				affine_rootpoint.y -= (base_topoffs * this_yscale);
+			}
 		}
 	}
 
@@ -4821,10 +5183,50 @@ static void HWR_ProjectSprite(mobj_t *thing)
 
 	// store information in a vissprite
 	vis = HWR_NewVisSprite();
-	vis->x1 = x1;
-	vis->x2 = x2;
-	vis->z1 = z1;
-	vis->z2 = z2;
+
+	if (affinesprite)
+	{
+		vis->affine.p1.x = affine_point[0].x;
+		vis->affine.p1.y = affine_point[0].y;
+
+		vis->affine.p2.x = affine_point[1].x;
+		vis->affine.p2.y = affine_point[1].y;
+
+		vis->affine.p3.x = affine_point[2].x;
+		vis->affine.p3.y = affine_point[2].y;
+
+		vis->affine.p4.x = affine_point[3].x;
+		vis->affine.p4.y = affine_point[3].y;
+
+		vis->affine.root.x = affine_rootpoint.x;
+		vis->affine.root.y = affine_rootpoint.y;
+		vis->affine.root.z = affine_rootpoint.z;
+
+		vis->affine.patchcos = rightcos;
+		vis->affine.patchsin = rightsin;
+
+		vis->affine.transform.a = affine_transform.a;
+		vis->affine.transform.c = affine_transform.b;
+		vis->affine.transform.b = affine_transform.c;
+		vis->affine.transform.d = affine_transform.d;
+		vis->affine.transform.ox = affine_transform.ox;
+		vis->affine.transform.oy = affine_transform.oy;
+
+		vis->affine.bounding_point.x = affine_rootpoint.x + leftbound;
+		vis->affine.bounding_point.y = affine_rootpoint.z + backbound;
+		vis->affine.bounding_point.z = affine_rootpoint.y + topbound;
+
+		// We're using this info to draw the affine sprite; zero-out "standard" draw info.
+		vis->x1 = vis->x2 = vis->z1 = vis->z2 = 0;
+		vis->gz = vis->gzt = 0;
+	}
+	else
+	{
+		vis->x1 = x1;
+		vis->x2 = x2;
+		vis->z1 = z1;
+		vis->z2 = z2;
+	}
 
 	vis->tz = tz; // Keep tz for the simple sprite sorting that happens
 	vis->tracertz = tracertz;
@@ -4873,9 +5275,12 @@ static void HWR_ProjectSprite(mobj_t *thing)
 	else
 		vis->colormap = R_GetTranslationForThing(thing, color, translation);
 
-	// set top/bottom coords
-	vis->gzt = gzt;
-	vis->gz = gz;
+	if (!affinesprite)
+	{
+		// set top/bottom coords
+		vis->gzt = gzt;
+		vis->gz = gz;
+	}
 
 	//CONS_Debug(DBG_RENDER, "------------------\nH: sprite  : %d\nH: frame   : %x\nH: type    : %d\nH: sname   : %s\n\n",
 	//            thing->sprite, thing->frame, thing->type, sprnames[thing->sprite]);

@@ -940,6 +940,10 @@ typedef enum
 	RF_SHADOWDRAW       = 0x00004000,  // Stretches and skews the sprite like a shadow.
 	RF_SHADOWEFFECTS    = 0x00008000,  // Scales and becomes transparent like a shadow.
 	RF_DROPSHADOW       = (RF_SHADOWDRAW | RF_SHADOWEFFECTS | RF_FULLDARK),
+
+	RF_NOAFFINE				= 0x00010000,  // Disables affine drawing for this sprite
+
+	RF_AFFINEPRESCALE    = 0x00020000,  // Makes affines scale before rotating, instead of rotating before scaling
 } renderflags_t;
 
 typedef enum
@@ -997,5 +1001,34 @@ typedef struct
 	size_t numframes;
 	spriteframe_t *spriteframes;
 } spritedef_t;
+
+// Affine transformation bounding positions, in pixels. Used for Software to determine
+// the dimensions of an affine patch.
+typedef struct
+{
+	vector2_t pivot;
+
+	// Differences between the "pivot" of the bound and each corner position.
+	INT32 xleft, yup, xright, ydown;
+
+	// General length between each bounding position
+	INT32 xlen, ylen;
+
+	INT32 l;  // Leftmost bounding
+	INT32 r;  // Rightmost bounding
+
+	INT32 t;  // Highest bounding
+	INT32 b;  // Lowest bounding
+} affine_bounding_t;
+
+// an affine transformation matrix. maps screen coordinates to texture coordinates
+typedef struct
+{
+	fixed_t a; // horizontal step per pixel (M7A)
+	fixed_t b; // horizontal step per scanline (M7B)
+	fixed_t c; // vertical step per pixel (M7C)
+	fixed_t d; // vertical step per scanline (M7D)
+	fixed_t ox, oy; // transform origin in texture coordinates (M7X/M7Y)
+} affine_t;
 
 #endif

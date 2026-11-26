@@ -51,6 +51,16 @@ INT32 R_GetRollAngle(angle_t rollangle)
 	return ra;
 }
 
+#define VISROTMUL (ANG1 * ROTANGDIFF)
+
+// Simulates "rollangle" angling
+angle_t R_ConvToRollAngle(angle_t ang)
+{
+	return (cv_fakerollangle.value) ? (R_GetRollAngle(ang) * VISROTMUL) : ang;
+}
+
+#undef VISROTMUL
+
 patch_t *Patch_GetRotated(patch_t *patch, INT32 angle, boolean flip)
 {
 	rotsprite_t *rotsprite = patch->rotated;

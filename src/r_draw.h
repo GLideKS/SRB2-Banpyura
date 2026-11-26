@@ -43,6 +43,19 @@ extern INT32 dc_numlights, dc_maxlights;
 
 extern INT32 dc_texheight, dc_postlength;
 
+extern UINT8 *dc_source;
+extern INT32 dc_sourcelength;
+
+extern affine_t dc_affine;
+extern affine_bounding_t dc_affinebound;
+extern f_vector2_t dc_affineoffset;
+extern f_vector2_t dc_affinemosaic;
+extern fixed_t dc_affineystep;
+extern fixed_t dc_frac;
+
+extern f_vector2_t visoffs;
+extern f_vector2_t rotoffset;
+
 // -----------------------
 // SPAN DRAWING CODE STUFF
 // -----------------------
@@ -151,6 +164,16 @@ void R_VideoErase(size_t ofs, INT32 count);
 // -----------------
 // 8bpp DRAWING CODE
 // -----------------
+
+void R_DrawAffineColumn_8(void);
+void R_DrawTranslatedAffineColumn_8(void);
+void R_DrawTranslucentAffineColumn_8(void);
+void R_DrawTranslatedTranslucentAffineColumn_8(void);
+
+/*void R_DrawAffineColumn_Brightmap(void);
+void R_DrawTranslatedAffineColumn_Brightmap(void);
+void R_DrawTranslucentAffineColumn_Brightmap(void);
+void R_DrawTranslatedTranslucentAffineColumn_Brightmap(void);*/
 
 void R_DrawColumn_8(void);
 void R_DrawColumnClamped_8(void);

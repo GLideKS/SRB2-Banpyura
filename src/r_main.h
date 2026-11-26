@@ -133,6 +133,10 @@ extern consvar_t cv_secbright;
 extern consvar_t cv_flashes;
 extern consvar_t cv_servermusic;
 
+extern consvar_t cv_affinerotation;
+extern consvar_t cv_fakerollangle;
+extern consvar_t cv_affineprescale, cv_affinemosaic;
+
 extern boolean r_renderwalls;
 extern boolean r_renderfloors;
 extern boolean r_renderthings;

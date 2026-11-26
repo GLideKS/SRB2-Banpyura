@@ -86,9 +86,17 @@ boolean R_ThingVerticallyFlipped (mobj_t *thing);
 boolean R_ThingIsPaperSprite (mobj_t *thing);
 boolean R_ThingIsFloorSprite (mobj_t *thing);
 
+
 boolean R_ThingIsFullBright (mobj_t *thing);
 boolean R_ThingIsSemiBright (mobj_t *thing);
 boolean R_ThingIsFullDark (mobj_t *thing);
+
+boolean R_ThingIsAffineSprite (mobj_t *thing);
+boolean R_AffinePreScale (mobj_t *thing);
+void R_GetPivotVectorFromSpriteInfo(vector2_t* out,
+				    vector2_t* defaultpiv,
+				    spriteinfo_t* sprinfo,
+				    size_t frame);
 
 boolean R_ThingIsFlashing (mobj_t *thing);
 
@@ -146,6 +154,7 @@ typedef enum
 	SC_SHEAR      = 1<<12,
 	SC_SPLAT      = 1<<13,
 	SC_BBOX       = 1<<14,
+	SC_AFFINE     = 1<<15,
 	// masks
 	SC_CUTMASK    = SC_TOP|SC_BOTTOM|SC_NOTVISIBLE,
 	SC_FLAGMASK   = ~SC_CUTMASK
@@ -172,6 +181,7 @@ typedef struct vissprite_s
 
 	fixed_t startfrac; // horizontal position of x1
 	fixed_t xscale, scale; // projected horizontal and vertical scales
+	fixed_t ypush_scale; // Scale for downwards Y movement. Likely only relevant for affines.
 	fixed_t thingscale; // the object's scale
 	fixed_t sortscale; // sortscale only differs from scale for paper sprites and floor sprites
 	fixed_t sortsplat; // the sortscale from behind the floor sprite
@@ -192,6 +202,16 @@ typedef struct vissprite_s
 		fixed_t tan; // The amount to shear the sprite vertically per row
 		INT32 offset; // The center of the shearing location offset from x1
 	} shear;
+
+	struct {
+		vector2_t scaling; // Affine scaling
+		vector2_t distscale; // X/Y scale based on camera distance
+		f_vector2_t mosaic; // Truncates how columndrawers "move" across the screen
+		angle_t rollangle; // Affine rotation angle
+		affine_t transform; // The actual affine transformation.
+		affine_bounding_t bounds; // The "bounding box" (draw area) of the affine sprite.
+		fixed_t base_yscale; // (For papersprites) The base vertical scale before any further warping
+	} affine;
 
 	fixed_t texturemid;
 	patch_t *patch;

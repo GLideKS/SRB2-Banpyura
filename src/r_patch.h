@@ -45,6 +45,7 @@ patch_t *Patch_GetRotatedSprite(
 angle_t R_ModelRotationAngle(interpmobjstate_t *interp);
 angle_t R_SpriteRotationAngle(interpmobjstate_t *interp);
 INT32 R_GetRollAngle(angle_t rollangle);
+angle_t R_ConvToRollAngle(angle_t ang);
 #endif
 
 #endif // __R_PATCH__

@@ -118,6 +118,14 @@ void SCR_SetDrawFuncs(void)
 		colfuncs[COLDRAWFUNC_TWOSMULTIPATCHTRANS] = R_Draw2sMultiPatchTranslucentColumn_8;
 		colfuncs[COLDRAWFUNC_FOG] = R_DrawFogColumn_8;
 
+		// Affine functions; the ones here are only relevant for sprites.
+		// We can't rotate texture columns normally, can we?
+
+		colfuncs[COLDRAWFUNC_AFFINE] = R_DrawAffineColumn_8;
+		colfuncs[COLDRAWFUNC_AFFINETRANS] = R_DrawTranslatedAffineColumn_8;
+		colfuncs[COLDRAWFUNC_AFFINEFUZZY] = R_DrawTranslucentAffineColumn_8;
+		colfuncs[COLDRAWFUNC_AFFINETRANSTRANS] = R_DrawTranslatedTranslucentAffineColumn_8;
+
 		spanfuncs[SPANDRAWFUNC_TRANS] = R_DrawTranslucentSpan_8;
 		spanfuncs[SPANDRAWFUNC_TILTED] = R_DrawTiltedSpan_8;
 		spanfuncs[SPANDRAWFUNC_TILTEDTRANS] = R_DrawTiltedTranslucentSpan_8;

@@ -175,6 +175,13 @@ void V_DrawStretchyFixedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vsca
 void V_DrawCroppedPatch(fixed_t x, fixed_t y, fixed_t pscale, fixed_t vscale, INT32 scrn, patch_t *patch, const UINT8 *colormap, fixed_t sx, fixed_t sy, fixed_t w, fixed_t h);
 void V_DrawBackgroundPatch(patch_t *patch, INT32 scale_type);
 
+affine_bounding_t* V_GetAffineBounds(const affine_t* transform,
+				     patch_t* patch,
+					 fixed_t divisor,
+				     affine_bounding_t* out,
+					 boolean unrestrict_bound);
+void V_DrawAffinePatch(fixed_t x, fixed_t y, const affine_t *transform, INT32 scrn, patch_t *patch, const UINT8 *colormap);
+
 void V_DrawContinueIcon(INT32 x, INT32 y, INT32 flags, INT32 skinnum, UINT16 skincolor);
 
 // Draw a linear block of pixels into the view buffer.
