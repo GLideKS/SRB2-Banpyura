@@ -348,7 +348,7 @@ void PT_TextCmd(SINT8 node, INT32 netconsole)
 
 		// search a tic that have enougth space in the ticcmd
 		while ((textcmd = D_GetExistingTextcmd(tic, netconsole)),
-			(TotalTextCmdPerTic(tic) > j || netbuffer->u.textcmd[0] + (textcmd ? textcmd[0] : 0) > MAXTEXTCMD)
+			(TotalTextCmdPerTic(tic) > j || netbuffer->u.textcmd[0] + (textcmd ? textcmd[0] : 0) >= MAXTEXTCMD)
 			&& tic < firstticstosend + BACKUPTICS)
 			tic++;
 
