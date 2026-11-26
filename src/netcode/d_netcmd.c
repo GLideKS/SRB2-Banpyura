@@ -3392,7 +3392,7 @@ static void Got_MotD_f(UINT8 **cp, INT32 playernum)
 	INT32 i;
 	boolean kick = false;
 
-	READSTRINGN(*cp, mymotd, sizeof(motd));
+	READSTRINGN(*cp, mymotd, sizeof(motd) - 1);
 
 	// Disallow non-printing characters and semicolons.
 	for (i = 0; mymotd[i] != '\0'; i++)
