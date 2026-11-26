@@ -65,6 +65,7 @@ extern INT16 consistancy[BACKUPTICS];
 
 void Command_Ping_f(void);
 extern tic_t connectiontimeout;
+extern boolean timingout;
 extern UINT16 pingmeasurecount;
 extern UINT32 realpingtable[MAXPLAYERS];
 extern UINT32 playerpingtable[MAXPLAYERS];

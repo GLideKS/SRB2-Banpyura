@@ -46,6 +46,7 @@
 // Normally maketic >= gametic > 0
 
 tic_t connectiontimeout = (10*TICRATE);
+boolean timingout = false;
 
 INT16 numnetnodes;
 INT16 numslots;
@@ -398,8 +399,15 @@ void Net_AckTicker(void)
 		// This is something like node open flag
 		if (nodes[i].firstacktosend)
 		{
-			if (!(nodes[i].flags & NF_CLOSE)
-				&& nodes[i].lasttimepacketreceived + connectiontimeout < I_GetTime())
+			if (nodes[i].flags & NF_CLOSE)
+				continue;
+
+			if (client)
+			{
+				timingout = (nodes[i].lasttimepacketreceived + TICRATE < I_GetTime());
+			}
+
+			if (nodes[i].lasttimepacketreceived + connectiontimeout < I_GetTime())
 			{
 				Net_ConnectionTimeout(i);
 			}
