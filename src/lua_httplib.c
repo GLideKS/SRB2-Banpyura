@@ -24,6 +24,7 @@
 #ifdef HAVE_CURL
 #include <curl/curl.h>
 #endif
+#include "netcode/d_clisrv.h"
 
 typedef struct {
 	char *data;
@@ -794,6 +795,9 @@ static int lib_http_encode_base64(lua_State *L)
 	size_t out_len = 4 * ((len + 2) / 3);
 	char *encoded = malloc(out_len + 1);
 
+	if ((out_len + 1) <= 0)
+		return 0;
+
 	if (!encoded)
 	{
 		I_Error("Out of memory");
@@ -830,6 +834,9 @@ static int lib_http_decode_base64(lua_State *L)
 	
 	if (len > 0 && data[len - 1] == '=') out_len--;
 	if (len > 1 && data[len - 2] == '=') out_len--;
+
+	if ((out_len + 1) <= 0)
+		return 0;
 	
 	unsigned char *decoded = malloc(out_len + 1);
 
@@ -1042,6 +1049,10 @@ static luaL_Reg lib_http[] = {
 
 int LUA_HTTPLib(lua_State *L)
 {
+	// disable httplib as a client for security purposes
+	if (!dedicated)
+		return 0;
+
 	lua_newtable(L);
 	luaL_register(L, NULL, lib_http);
 	lua_setglobal(L, "HTTP");
