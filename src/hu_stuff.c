@@ -2182,8 +2182,25 @@ void HU_drawPing(INT32 x, INT32 y, UINT32 ping, boolean notext, INT32 flags, INT
 	if (gentleman)
 		barcolor = 194;
 
+	if (timingout && (pnum == consoleplayer))
+	{
+		numbars = 3;
+		barcolor = 35;
+	}
+
 	if (ping < UINT32_MAX && (!notext || vid.width >= 640)) // how sad, we're using a shit resolution.
-		V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", ping));
+	{
+		if (timingout && (pnum == consoleplayer))
+		{
+			INT32 color = V_YELLOWMAP;
+			if ((gametic / 5) & 1)
+				color = V_ORANGEMAP;
+
+			V_DrawRightAlignedString(x + 10, y - 2, V_ALLOWLOWERCASE|color|flags, "!");
+		}
+		else
+			V_DrawSmallString(dx, y+4, V_ALLOWLOWERCASE|flags, va("%dms", ping));
+	}
 
 	for (i=0; (i<3); i++) // Draw the ping bar
 	{
