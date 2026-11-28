@@ -1500,6 +1500,7 @@ static boolean CL_ServerConnectionSearchTicker(tic_t *asksent)
 			viewserver_toggle = false;
 			viewserver_scroll = 0;
 			cl_mode = CL_VIEWSERVER;
+			ChangeServMusic(servmus_1);
 			CL_CheckAddonTypes();
 		}
 		else
